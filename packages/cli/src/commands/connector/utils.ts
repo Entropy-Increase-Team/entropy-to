@@ -21,7 +21,7 @@ import {
 } from '../../utils.js';
 
 const execFilePromise = promisify(execFile);
-const validNpmPackageSpecRegex = /^(?:@[\da-z~-][\w.~-]*\/)?[\da-z~-][\w.~-]*(?:@[\w+.-]+)?$/i;
+const validNpmPackageSpecRegex = /^(?:@[\da-z][\w.~-]*\/)?[\da-z][\w.~-]*(?:@[\w+.~-]+)?$/i;
 
 const isSubPath = (parentDirectory: string, targetPath: string) => {
   const relativePath = path.relative(parentDirectory, targetPath);
@@ -113,6 +113,10 @@ export const addConnectorsToPath = async (cwd: string, packageNames: string[]) =
           }
 
           const { filename, name, version } = result[0];
+          if (filename.includes('\\') || name.includes('\\')) {
+            throw new Error(`Resolved connector path escapes target directory: ${name}`);
+          }
+
           const escapedFilename = filename.replaceAll('/', '-').replaceAll('@', '');
           const tarPath = path.resolve(resolvedCwd, escapedFilename);
           const packageDirectory = path.resolve(resolvedCwd, name.replaceAll('/', '-'));

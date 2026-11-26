@@ -124,4 +124,17 @@ describe('buildUpdateWhere()', () => {
       new UpdateError(Users, updateWhereData)
     );
   });
+
+  it('rejects undefined values in where clause instead of widening the update scope', async () => {
+    const pool = createTestPool('select 1');
+    const updateWhere = buildUpdateWhereWithPool(pool)(Users);
+
+    await expect(
+      updateWhere({
+        set: { username: '123' },
+        where: { id: undefined },
+        jsonbMode: 'merge',
+      })
+    ).rejects.toThrow();
+  });
 });

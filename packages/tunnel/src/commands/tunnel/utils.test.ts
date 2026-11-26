@@ -240,9 +240,21 @@ describe('Tunnel utils', () => {
     it('should respond 405 for unsupported HTTP methods and set valid cache-control', async () => {
       const postResponse = await fetch(fileUrl, { method: 'POST' });
       expect(postResponse.status).toBe(405);
+      expect(postResponse.headers.get('allow')).toBe('GET, HEAD');
 
       const getResponse = await fetch(fileUrl);
       expect(getResponse.headers.get('cache-control')).toBe('max-age=604800');
+
+      const headResponse = await fetch(fileUrl, { method: 'HEAD' });
+      expect(headResponse.status).toBe(200);
+      expect(headResponse.headers.get('content-length')).toBe('10');
+      await expect(headResponse.text()).resolves.toBe('');
+    });
+
+    it('should respond 404 when requesting a directory path rather than 500', async () => {
+      await fs.mkdir(path.join(staticPath, 'dir.v1'), { recursive: true });
+      const response = await fetch(new URL('dir.v1', fileUrl));
+      expect(response.status).toBe(404);
     });
   });
 });

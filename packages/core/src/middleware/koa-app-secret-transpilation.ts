@@ -1,4 +1,4 @@
-import type { Nullable } from '@silverhand/essentials';
+import { trySafe, type Nullable } from '@silverhand/essentials';
 import type { Context, MiddlewareType } from 'koa';
 import { errors } from 'oidc-provider';
 
@@ -8,8 +8,8 @@ import { isRecord } from '#src/utils/type.js';
 const noVSCHAR = /[^\u0020-\u007E]/;
 
 function decodeAuthToken(token: string) {
-  const authToken = decodeURIComponent(token.replaceAll('+', '%20'));
-  if (noVSCHAR.test(authToken)) {
+  const authToken = trySafe(() => decodeURIComponent(token.replaceAll('+', '%20')));
+  if (!authToken || noVSCHAR.test(authToken)) {
     return;
   }
   return authToken;
@@ -61,7 +61,13 @@ export default function koaAppSecretTranspilation<StateT, ContextT, ResponseBody
         return {};
       }
 
-      const [part0, part1] = Buffer.from(parts[1], 'base64').toString().split(':');
+      const decoded = Buffer.from(parts[1], 'base64').toString();
+      const separatorIndex = decoded.indexOf(':');
+      if (separatorIndex <= 0) {
+        return {};
+      }
+      const part0 = decoded.slice(0, separatorIndex);
+      const part1 = decoded.slice(separatorIndex + 1);
 
       return {
         clientId: part0 && decodeAuthToken(part0),

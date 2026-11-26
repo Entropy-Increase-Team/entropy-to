@@ -326,6 +326,7 @@ describe('Maligun connector', () => {
       { endpoint: 'https://evil.example.com/#.mailgun.net' },
       { endpoint: 'http://api.mailgun.net' },
       { domain: '../evil' },
+      { domain: '.' },
     ]) {
       getConfig.mockResolvedValue({
         ...baseConfig,
@@ -345,7 +346,40 @@ describe('Maligun connector', () => {
           type: TemplateType.Generic,
           payload: { code: '123456' },
         })
-      ).rejects.toThrowError('Invalid Mailgun endpoint or domain.');
+      ).rejects.toMatchObject({ code: 'invalid_config' });
     }
+  });
+
+  it('strips header control characters from interpolated subject, replyTo, and sendFrom', async () => {
+    nock('https://api.eu.mailgun.net')
+      .post(`/v3/${domain}/messages`, {
+        from: `CleanAppBcc:victim@example.com <${baseConfig.from}>`,
+        to: 'bar@example.com',
+        subject: 'Invite from CleanAppBcc:victim@example.com',
+        html: '<p>Hello</p>',
+        'h:Reply-To': 'support@example.comCc:other@example.com',
+      })
+      .reply(200, { id: 'id', message: 'Queued.' });
+
+    getI18nEmailTemplate.mockResolvedValueOnce({
+      subject: 'Invite from {{application.name}}',
+      content: '<p>Hello</p>',
+      replyTo: 'support@example.com\r\nCc:other@example.com',
+      sendFrom: `{{application.name}} <${baseConfig.from}>`,
+    } satisfies EmailTemplateDetails);
+
+    getConfig.mockResolvedValueOnce({
+      ...baseConfig,
+      endpoint: 'https://api.eu.mailgun.net/',
+      deliveries: {},
+    });
+
+    await expect(
+      connector.sendMessage({
+        to: 'bar@example.com',
+        type: TemplateType.Generic,
+        payload: { code: '123456', application: { name: 'CleanApp\r\nBcc:victim@example.com' } },
+      })
+    ).resolves.toBeDefined();
   });
 });

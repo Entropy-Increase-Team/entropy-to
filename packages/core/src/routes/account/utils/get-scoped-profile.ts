@@ -105,6 +105,20 @@ const getPrimaryIdentifierAvailability = (
   ),
 });
 
+const getReadableSocialFields = (
+  socialControl: AccountCenterControlValue | undefined,
+  { identities, ssoIdentities }: Pick<Partial<UserProfileResponse>, 'identities' | 'ssoIdentities'>
+): Partial<UserProfileResponse> => {
+  if (!isFieldReadable(socialControl)) {
+    return {};
+  }
+
+  return {
+    identities,
+    ...conditional(ssoIdentities !== undefined && { ssoIdentities }),
+  };
+};
+
 export const getAccountCenterFilteredProfile = (
   user: Partial<UserProfileResponse>,
   accountCenter: AccountCenter,
@@ -119,6 +133,7 @@ export const getAccountCenterFilteredProfile = (
     avatar,
     customData,
     identities,
+    ssoIdentities,
     profile,
     hasPassword,
     ...rest
@@ -135,7 +150,7 @@ export const getAccountCenterFilteredProfile = (
     ...conditional(isFieldReadable(fields.phone) && { primaryPhone }),
     ...conditional(isFieldReadable(fields.profile) && { profile }),
     ...conditional(isFieldReadable(fields.customData) && { customData }),
-    ...conditional(isFieldReadable(fields.social) && { identities }),
+    ...getReadableSocialFields(fields.social, { identities, ssoIdentities }),
     ...conditional(isFieldReadable(fields.password) && { hasPassword }),
     ...conditional(
       securityVerificationUser && {

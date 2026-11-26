@@ -17,7 +17,13 @@ import {
 import { generateStandardId } from '@logto/shared/universal';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 
-import { defaultMetadata, jwksUri, issuer, authorizationEndpoint } from './constant.js';
+import {
+  defaultMetadata,
+  jwksUri,
+  issuer,
+  authorizationEndpoint,
+  defaultTimeout,
+} from './constant.js';
 import { appleConfigGuard, dataGuard } from './types.js';
 
 const generateNonce = () => generateStandardId();
@@ -27,27 +33,19 @@ const generateNonce = () => generateStandardId();
 const isEmailVerified = (value: unknown) => value === true || value === 'true';
 
 const validateSessionNonce = (session: unknown, payloadNonce: unknown) => {
-  const validationNonce =
-    typeof session === 'object' && session !== null && 'nonce' in session
-      ? session.nonce
-      : undefined;
+  const hasSessionNonce =
+    typeof session === 'object' &&
+    session !== null &&
+    'nonce' in session &&
+    session.nonce !== undefined;
 
-  if (!validationNonce && !payloadNonce) {
+  if (!hasSessionNonce) {
     return;
   }
 
   assert(
-    typeof validationNonce === 'string' && validationNonce.length > 0,
-    new ConnectorError(ConnectorErrorCodes.General, {
-      message: "'nonce' not presented in session storage.",
-    })
-  );
-
-  assert(
-    validationNonce === payloadNonce,
-    new ConnectorError(ConnectorErrorCodes.SocialIdTokenInvalid, {
-      message: "IdToken validation failed due to 'nonce' mismatch.",
-    })
+    typeof session.nonce === 'string' && session.nonce.length > 0 && session.nonce === payloadNonce,
+    new ConnectorError(ConnectorErrorCodes.SocialIdTokenInvalid)
   );
 };
 
@@ -96,34 +94,47 @@ const getUserInfo =
 
     const { clientId } = config;
 
-    try {
-      const { payload } = await jwtVerify(idToken, createRemoteJWKSet(new URL(jwksUri)), {
-        issuer,
-        audience: clientId,
-      });
-
-      validateSessionNonce(await getSession(), payload.nonce);
-
-      if (!payload.sub) {
+    const payload = await (async () => {
+      try {
+        const { payload } = await jwtVerify(
+          idToken,
+          createRemoteJWKSet(new URL(jwksUri), { timeoutDuration: defaultTimeout }),
+          {
+            issuer,
+            audience: clientId,
+          }
+        );
+        return payload;
+      } catch {
         throw new ConnectorError(ConnectorErrorCodes.SocialIdTokenInvalid);
       }
+    })();
 
-      return {
-        id: payload.sub,
-        // Take the email only from the signed ID token, which Apple includes on every
-        // authorization. The `user` field is posted outside the token and only on the first
-        // authorization, so it supplies just the name, which the ID token never carries.
-        // See https://developer.apple.com/documentation/signinwithapple/authenticating-users-with-sign-in-with-apple
-        email:
-          payload.email && isEmailVerified(payload.email_verified)
-            ? String(payload.email)
-            : undefined,
-        name: [user?.name?.firstName, user?.name?.lastName].filter(Boolean).join(' ') || undefined,
-        rawData: jsonGuard.parse(data),
-      };
-    } catch {
+    assert(
+      getSession,
+      new ConnectorError(ConnectorErrorCodes.NotImplemented, {
+        message: "'getSession' is not implemented.",
+      })
+    );
+    validateSessionNonce(await getSession(), payload.nonce);
+
+    if (!payload.sub) {
       throw new ConnectorError(ConnectorErrorCodes.SocialIdTokenInvalid);
     }
+
+    return {
+      id: payload.sub,
+      // Take the email only from the signed ID token, which Apple includes on every
+      // authorization. The `user` field is posted outside the token and only on the first
+      // authorization, so it supplies just the name, which the ID token never carries.
+      // See https://developer.apple.com/documentation/signinwithapple/authenticating-users-with-sign-in-with-apple
+      email:
+        payload.email && isEmailVerified(payload.email_verified)
+          ? String(payload.email)
+          : undefined,
+      name: [user?.name?.firstName, user?.name?.lastName].filter(Boolean).join(' ') || undefined,
+      rawData: jsonGuard.parse(data),
+    };
   };
 
 const authorizationCallbackHandler = async (parameterObject: unknown) => {

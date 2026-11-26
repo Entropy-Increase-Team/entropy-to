@@ -1,5 +1,4 @@
 import { readFile } from 'node:fs/promises';
-import path from 'node:path';
 
 import type { UserAssets } from '@logto/schemas';
 import {
@@ -21,6 +20,7 @@ import assertThat from '#src/utils/assert-that.js';
 import { getConsoleLogFromContext } from '#src/utils/console.js';
 import { buildUploadFile } from '#src/utils/storage/index.js';
 import { getTenantId } from '#src/utils/tenant.js';
+import { assertSafeUploadedAssetContent, buildSafeUploadFilename } from '#src/utils/user-assets.js';
 
 import type { ManagementApiRouter, RouterInitArgs } from './types.js';
 
@@ -85,19 +85,16 @@ export default function userAssetsRoutes<T extends ManagementApiRouter>(
           ? storageProviderConfig.isPublic
           : undefined;
       const uploadFile = buildUploadFile(storageProviderConfig);
-      const safeFilename =
-        path
-          .basename(file.originalFilename)
-          .replaceAll(/[^\w.-]/g, '-')
-          .replace(/^\.+/, '')
-          .slice(0, 128) || 'asset';
+      const safeFilename = buildSafeUploadFilename(file.originalFilename);
+      const fileContent = await readFile(file.filepath);
+      assertSafeUploadedAssetContent(fileContent, file.mimetype);
       const objectKey = `${tenantId}/${userId}/${format(
         new Date(),
         'yyyy/MM/dd'
       )}/${generateStandardId(8)}/${safeFilename}`;
 
       try {
-        const { url } = await uploadFile(await readFile(file.filepath), objectKey, {
+        const { url } = await uploadFile(fileContent, objectKey, {
           contentType: file.mimetype,
           publicUrl,
           isPublic,

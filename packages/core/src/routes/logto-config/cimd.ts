@@ -74,7 +74,7 @@ export default function logtoConfigCimdRoutes<T extends ManagementApiRouter>(
       }
 
       // The switch is applied at provider construction; rebuild the tenant on the next request.
-      void tenant.invalidateCache();
+      await tenant.invalidateCache();
 
       return next();
     }

@@ -169,14 +169,35 @@ export const isFileAssetPath = (url: string): boolean => {
  * @param range Range request header value
  * @returns Object containing start, end, and count values
  */
+const parseRangeBound = (rawBound?: string) => {
+  if (rawBound === undefined) {
+    return;
+  }
+
+  const parsedBound = Number.parseInt(rawBound, 10);
+  if (!Number.isSafeInteger(parsedBound)) {
+    throw new TypeError('Range not satisfiable.');
+  }
+
+  return parsedBound;
+};
+
 export const parseRange = (range: string) => {
-  const rangeMatch = /bytes=(\d+)-(\d+)?/.exec(range);
-  if (range && !rangeMatch) {
+  if (!range) {
+    return {
+      start: undefined,
+      end: undefined,
+      count: undefined,
+    };
+  }
+
+  const rangeMatch = /^bytes=(\d+)-(\d+)?$/.exec(range);
+  if (!rangeMatch) {
     throw new Error('Range not satisfiable.');
   }
 
-  const start = rangeMatch?.[1] === undefined ? undefined : Number.parseInt(rangeMatch[1], 10);
-  const end = rangeMatch?.[2] === undefined ? undefined : Number.parseInt(rangeMatch[2], 10);
+  const start = parseRangeBound(rangeMatch[1]);
+  const end = parseRangeBound(rangeMatch[2]);
   if (start !== undefined && end !== undefined && end < start) {
     throw new Error('Range not satisfiable.');
   }

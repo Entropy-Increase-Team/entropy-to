@@ -165,45 +165,56 @@ const alteration: CommandModule<unknown, { action: string; target?: string }> = 
       }
       case 'deploy': {
         const pool = await createPoolFromConfig();
-        const alterations = await chooseAlterationsByVersion(
-          await getAvailableAlterations(pool),
-          target
-        );
+        try {
+          const alterations = await chooseAlterationsByVersion(
+            await getAvailableAlterations(pool),
+            target
+          );
 
-        consoleLog.info(
-          `Found ${alterations.length} alteration${conditionalString(
-            alterations.length > 1 && 's'
-          )} to deploy`
-        );
+          consoleLog.info(
+            `Found ${alterations.length} alteration${conditionalString(
+              alterations.length > 1 && 's'
+            )} to deploy`
+          );
 
-        // The await inside the loop is intended, alterations should run in order
-        for (const alteration of alterations) {
-          // eslint-disable-next-line no-await-in-loop
-          await deployAlteration(pool, alteration);
+          // The await inside the loop is intended, alterations should run in order
+          for (const alteration of alterations) {
+            // eslint-disable-next-line no-await-in-loop
+            await deployAlteration(pool, alteration);
+          }
+        } finally {
+          await pool.end();
         }
-
-        await pool.end();
 
         break;
       }
       case 'rollback':
       case 'r': {
         const pool = await createPoolFromConfig();
-        const alterations = await chooseRevertAlterationsByVersion(
-          await getAvailableAlterations(pool, 'lte'),
-          target ?? ''
-        );
+        try {
+          const alterations = await chooseRevertAlterationsByVersion(
+            await getAvailableAlterations(pool, 'lte'),
+            target ?? ''
+          );
 
-        await revertAlterations(alterations, pool);
-        await pool.end();
+          await revertAlterations(alterations, pool);
+        } finally {
+          await pool.end();
+        }
         break;
       }
       case 'rollback-to-timestamp': {
         const pool = await createPoolFromConfig();
-        const alterations = await chooseRevertAlterationsByTimestamp(target ?? '');
+        try {
+          const alterations = chooseRevertAlterationsByTimestamp(
+            await getAvailableAlterations(pool, 'lte'),
+            target ?? ''
+          );
 
-        await revertAlterations(alterations, pool);
-        await pool.end();
+          await revertAlterations(alterations, pool);
+        } finally {
+          await pool.end();
+        }
         break;
       }
       default: {

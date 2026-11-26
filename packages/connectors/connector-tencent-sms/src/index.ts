@@ -46,15 +46,19 @@ function sendMessage(getConfig: GetConnectorConfig): SendMessageFunction {
       )
     );
 
-    // Filter out locale/uiLocales and non-primitive context objects from payload
-    const { locale, uiLocales, ...filteredPayload } = payload;
-
-    // Tencent SMS API requires all parameters to be strings. Keep only primitive template params.
-    const parametersSet = Object.values(filteredPayload)
-      .filter(
-        (value): value is string | number => typeof value === 'string' || typeof value === 'number'
-      )
-      .map(String);
+    // Extract deterministic positional template parameters (`{1}`) without relying on object key order.
+    const { code, link, locale, uiLocales, ...filteredPayload } = payload;
+    const parametersSet =
+      typeof code === 'string'
+        ? [code]
+        : typeof link === 'string'
+          ? [link]
+          : Object.values(filteredPayload)
+              .filter(
+                (value): value is string | number =>
+                  typeof value === 'string' || typeof value === 'number'
+              )
+              .map(String);
 
     try {
       const httpResponse = await sendSmsRequest(template.templateCode, parametersSet, to, {

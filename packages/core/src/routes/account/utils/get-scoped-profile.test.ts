@@ -93,4 +93,47 @@ describe('getAccountCenterFilteredProfile', () => {
     expect(profile.hasPrimaryEmail).toBeUndefined();
     expect(profile.hasPrimaryPhone).toBeUndefined();
   });
+
+  it('filters ssoIdentities unless fields.social is readable', () => {
+    const mockSsoIdentities = [
+      {
+        tenantId: 'tenant-id',
+        id: 'sso-1',
+        userId: 'user-id',
+        issuer: 'https://idp.example.com',
+        identityId: 'sub-1',
+        detail: { email: 'hidden@example.com' },
+        createdAt: 0,
+        ssoConnectorId: 'conn-1',
+        updatedAt: 0,
+      },
+    ];
+
+    const hiddenWhenOff = getAccountCenterFilteredProfile(
+      { id: 'user-id', ssoIdentities: mockSsoIdentities },
+      {
+        ...accountCenter,
+        fields: { ...accountCenter.fields, social: AccountCenterControlValue.Off },
+      },
+      new Set([UserScope.Identities])
+    );
+    expect(hiddenWhenOff.ssoIdentities).toBeUndefined();
+
+    const hiddenWhenUnset = getAccountCenterFilteredProfile(
+      { id: 'user-id', ssoIdentities: mockSsoIdentities },
+      accountCenter,
+      new Set([UserScope.Identities])
+    );
+    expect(hiddenWhenUnset.ssoIdentities).toBeUndefined();
+
+    const visibleWhenReadOnly = getAccountCenterFilteredProfile(
+      { id: 'user-id', ssoIdentities: mockSsoIdentities },
+      {
+        ...accountCenter,
+        fields: { ...accountCenter.fields, social: AccountCenterControlValue.ReadOnly },
+      },
+      new Set([UserScope.Identities])
+    );
+    expect(visibleWhenReadOnly.ssoIdentities).toEqual(mockSsoIdentities);
+  });
 });

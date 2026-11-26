@@ -24,7 +24,11 @@ class FakeWorker extends EventEmitter {
 
   constructor(
     readonly workerPath: string,
-    readonly options: { workerData: ScriptWorkerData; resourceLimits: Record<string, number> }
+    readonly options: {
+      workerData: ScriptWorkerData;
+      resourceLimits: Record<string, number>;
+      env?: Record<string, string>;
+    }
   ) {
     super();
     // eslint-disable-next-line @silverhand/fp/no-mutating-methods -- test bookkeeping
@@ -129,6 +133,7 @@ describe('WorkerThreadScriptRunner spawn contract', () => {
     expect(spawnedWorkers[0]?.options).toEqual({
       workerData: { script: 'worker-source', entry: 'runAction' },
       resourceLimits: { maxOldGenerationSizeMb: 64 },
+      env: {},
     });
   });
 

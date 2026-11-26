@@ -39,7 +39,7 @@ export const getFallbackOrigin = async (auth: HostnameProviderData): Promise<str
 
   const response = await got.get(
     new URL(
-      path.join(baseUrl.pathname, `/zones/${auth.zoneId}/custom_hostnames/fallback_origin`),
+      path.posix.join(baseUrl.pathname, `/zones/${auth.zoneId}/custom_hostnames/fallback_origin`),
       baseUrl
     ),
     {
@@ -65,7 +65,7 @@ export const createCustomHostname = async (auth: HostnameProviderData, hostname:
   }
 
   const response = await got.post(
-    new URL(path.join(baseUrl.pathname, `/zones/${auth.zoneId}/custom_hostnames`), baseUrl),
+    new URL(path.posix.join(baseUrl.pathname, `/zones/${auth.zoneId}/custom_hostnames`), baseUrl),
     {
       headers: {
         Authorization: `Bearer ${auth.apiToken}`,
@@ -93,7 +93,7 @@ export const getCustomHostname = async (auth: HostnameProviderData, identifier: 
 
   const response = await got.get(
     new URL(
-      path.join(baseUrl.pathname, `/zones/${auth.zoneId}/custom_hostnames/${identifier}`),
+      path.posix.join(baseUrl.pathname, `/zones/${auth.zoneId}/custom_hostnames/${identifier}`),
       baseUrl
     ),
     {
@@ -119,7 +119,7 @@ export const deleteCustomHostname = async (auth: HostnameProviderData, identifie
 
   const response = await got.delete(
     new URL(
-      path.join(baseUrl.pathname, `/zones/${auth.zoneId}/custom_hostnames/${identifier}`),
+      path.posix.join(baseUrl.pathname, `/zones/${auth.zoneId}/custom_hostnames/${identifier}`),
       baseUrl
     ),
     {

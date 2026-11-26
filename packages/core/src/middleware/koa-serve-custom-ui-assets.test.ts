@@ -226,6 +226,44 @@ describe('koaServeCustomUiAssets middleware', () => {
     ).rejects.toMatchError(
       new RequestError({ code: 'request.range_not_satisfiable', status: 416 })
     );
+
+    const outOfBoundsRangeCtx = createMockContext({
+      url: '/video.mp4',
+      headers: { range: 'bytes=150-200' },
+    });
+    mockedDownloadFile.mockResolvedValueOnce({
+      contentType: 'video/mp4',
+      readableStreamBody: Readable.from(''),
+      contentLength: 0,
+    });
+
+    await expect(
+      koaServeCustomUiAssets('custom-ui-asset-id')(outOfBoundsRangeCtx, next)
+    ).rejects.toMatchError(
+      new RequestError({ code: 'request.range_not_satisfiable', status: 416 })
+    );
+  });
+
+  it('clamps Content-Range end byte to totalFileSize - 1 and serves SPA index.html for /direct/* routes with dots', async () => {
+    const mockVideoStream = Readable.from('video data');
+    mockedDownloadFile.mockResolvedValueOnce({
+      contentType: 'video/mp4',
+      readableStreamBody: mockVideoStream,
+      contentLength: 100,
+    });
+    const rangeCtx = createMockContext({ url: '/video.mp4', headers: { range: 'bytes=0-500' } });
+    await koaServeCustomUiAssets('custom-ui-asset-id')(rangeCtx, next);
+    expect(rangeCtx.response.headers['content-range']).toEqual('bytes 0-99/100');
+
+    const mockHtmlStream = Readable.from('<html></html>');
+    mockedDownloadFile.mockResolvedValueOnce({
+      contentType: 'text/html',
+      readableStreamBody: mockHtmlStream,
+      contentLength: 13,
+    });
+    const directCtx = createMockContext({ url: '/direct/social/okta.com' });
+    await koaServeCustomUiAssets('custom-ui-asset-id')(directCtx, next);
+    expect(mockedDownloadFile).toHaveBeenLastCalledWith('default/custom-ui-asset-id/index.html');
   });
 
   describe('with an S3-compatible storage', () => {

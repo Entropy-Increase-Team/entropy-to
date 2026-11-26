@@ -50,5 +50,24 @@ describe('yunpian SMS connector', () => {
         })
       ).resolves.not.toThrow();
     });
+
+    it('wraps non-JSON HTTP 400 gateway responses in ConnectorError without leaking apikey', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(vi.fn());
+      const endpointUrl = new URL(endpoint);
+      nock(endpointUrl.origin).post(endpointUrl.pathname).reply(400, '<html>Bad Request</html>');
+
+      await expect(
+        sendMessage({
+          to: '+8613800138000',
+          type: TemplateType.Generic,
+          payload: { code: '999999' },
+        })
+      ).rejects.toMatchObject({
+        code: 'general',
+      });
+      expect(JSON.stringify(warnSpy.mock.calls)).not.toContain(mockedConfig.apikey);
+      expect(JSON.stringify(warnSpy.mock.calls)).not.toContain('999999');
+      warnSpy.mockRestore();
+    });
   });
 });

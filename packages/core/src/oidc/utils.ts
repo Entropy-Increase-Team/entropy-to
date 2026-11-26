@@ -399,8 +399,9 @@ export const buildLoginPromptUrl = (
   const directSignInSegments = (() => {
     if (directSignIn) {
       const [method, target, ...rest] = directSignIn.split(':');
-      const isValid =
-        rest.length === 0 && [method, target].every((part) => !part || /^[\w-]+$/.test(part));
+      const isValidMethod = Boolean(method && /^[\w-]+$/.test(method));
+      const isValidTarget = !target || /^[\w-]+(?:\.[\w-]+)*$/.test(target);
+      const isValid = rest.length === 0 && isValidMethod && isValidTarget;
       return isValid && method ? (target ? [method, target] : [method]) : undefined;
     }
     return conditional(googleOneTapCredential && ['social', GoogleConnector.target]);

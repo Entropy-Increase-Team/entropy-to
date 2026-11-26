@@ -3,7 +3,13 @@ import { conditional } from '@silverhand/essentials';
 import { type KoaContextWithOIDC, type UnknownObject } from 'oidc-provider';
 
 /** Claims only Logto may set; JWT customizer output is stripped of them before merging. */
-const reservedAuthenticationContextClaimKeys = new Set(['acr', 'amr', 'auth_time']);
+const reservedAuthenticationContextClaimKeys = new Set([
+  'acr',
+  'amr',
+  'auth_time',
+  'organization_id',
+  'act',
+]);
 
 /**
  * Drop the reserved authentication-context claims from JWT customizer output.

@@ -82,6 +82,7 @@ export class PooledWorker {
     this.worker = new Worker(options.workerPath, {
       workerData: { script: options.script, entry: options.entry } satisfies ScriptWorkerData,
       resourceLimits: { maxOldGenerationSizeMb: options.memoryMb },
+      env: {},
       // `stdout` and `stderr` are deliberately left at their default `false`, which pipes the
       // worker's output through to the host process — the passthrough dry runs rely on.
     });

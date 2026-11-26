@@ -66,4 +66,23 @@ describe('sendMessage()', () => {
       })
     );
   });
+
+  it('keeps verification code as the sole positional parameter regardless of extra payload fields', async () => {
+    const connector = await createConnector({ getConfig });
+    await connector.sendMessage({
+      to: phoneTest,
+      type: TemplateType.SignIn,
+      payload: {
+        link: 'https://auth.example.com/magic',
+        code: codeTest,
+        locale: 'en',
+      },
+    });
+    expect(sendSmsRequest).toHaveBeenCalledWith(
+      mockedTemplateCode,
+      [codeTest],
+      phoneTest,
+      expect.any(Object)
+    );
+  });
 });

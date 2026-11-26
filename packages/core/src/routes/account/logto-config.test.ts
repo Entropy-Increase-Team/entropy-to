@@ -150,13 +150,26 @@ describe('account logto-config routes', () => {
       expect(passkeyResponse.status).toBe(200);
     });
 
+    it('rejects MFA config updates when mfa field is omitted even if passkey is editable', async () => {
+      const mfaResponse = await accountRequest
+        .patch('/my-account/logto-configs')
+        .send({ mfa: { skipMfaOnSignIn: true } });
+
+      expect(mfaResponse.status).toBe(400);
+      expect(mfaResponse.body).toHaveProperty('code', 'account_center.field_not_editable');
+      expect(updateUserById).not.toHaveBeenCalled();
+    });
+
     it('does not allow users to clear the admin-managed MFA requirement', async () => {
+      const mfaEditableRequest = buildRequester({
+        fields: { mfa: AccountCenterControlValue.Edit },
+      });
       findUserById.mockResolvedValueOnce({
         ...mockUser,
         logtoConfig: { [userMfaDataKey]: { required: true } },
       });
 
-      const response = await accountRequest
+      const response = await mfaEditableRequest
         .patch('/my-account/logto-configs')
         .send({ mfa: { required: false } });
 

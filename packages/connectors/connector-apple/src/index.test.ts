@@ -204,4 +204,28 @@ describe('getUserInfo', () => {
       new ConnectorError(ConnectorErrorCodes.SocialIdTokenInvalid)
     );
   });
+
+  it('should allow native id_token with client-generated nonce when session has no nonce', async () => {
+    jwtVerify.mockImplementationOnce(() => ({
+      payload: { sub: 'nativeUserId', nonce: 'client-sha256-nonce' },
+    }));
+    const connector = await createConnector({ getConfig });
+    const getSession = vi.fn().mockResolvedValueOnce({});
+    await expect(connector.getUserInfo({ id_token: 'id_token' }, getSession)).resolves.toEqual({
+      id: 'nativeUserId',
+      rawData: { id_token: 'id_token' },
+    });
+  });
+
+  it('should preserve session retrieval errors instead of masking them as SocialIdTokenInvalid', async () => {
+    jwtVerify.mockImplementationOnce(() => ({
+      payload: { sub: 'userId' },
+    }));
+    const sessionError = new Error('session.connector_validation_session_not_found');
+    const connector = await createConnector({ getConfig });
+    const getSession = vi.fn().mockRejectedValueOnce(sessionError);
+    await expect(connector.getUserInfo({ id_token: 'id_token' }, getSession)).rejects.toBe(
+      sessionError
+    );
+  });
 });

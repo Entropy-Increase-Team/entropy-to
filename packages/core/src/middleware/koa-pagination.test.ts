@@ -94,6 +94,12 @@ describe('request', () => {
     const ctx = createContext({ page_size: '200' });
     await expect(koaPagination({ maxPageSize: 100 })(ctx, next)).rejects.toThrow();
   });
+
+  it('throws 400 when page or page_size is fractional or overflows safe offset bounds', async () => {
+    await expect(koaPagination()(createContext({ page: '1.5' }), next)).rejects.toThrow();
+    await expect(koaPagination()(createContext({ page_size: '2.5' }), next)).rejects.toThrow();
+    await expect(koaPagination()(createContext({ page: '1e20' }), next)).rejects.toThrow();
+  });
 });
 
 describe('response', () => {

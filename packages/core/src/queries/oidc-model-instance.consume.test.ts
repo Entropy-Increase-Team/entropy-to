@@ -56,10 +56,10 @@ describe('consumeInstanceById', () => {
     }
   );
 
-  it('re-stamps a refresh token and always resolves true', async () => {
+  it('preserves first consumed_at for an existing refresh token and resolves false when missing', async () => {
     const expectSql = sql`
       update ${table}
-      set ${fields.consumedAt}=to_timestamp($1)
+      set ${fields.consumedAt}=coalesce(${fields.consumedAt}, to_timestamp($1))
       where ${fields.modelName}=$2
       and ${fields.id}=$3
     `;
@@ -68,9 +68,12 @@ describe('consumeInstanceById', () => {
       expectSqlAssert(sql, expectSql.sql);
       expect(values).toEqual([100, 'RefreshToken', id]);
 
-      return createMockQueryResult([]);
+      return { ...createMockQueryResult([]), rowCount: 1 };
     });
 
     await expect(consumeInstanceById('RefreshToken', id)).resolves.toBe(true);
+
+    mockQuery.mockResolvedValueOnce(createMockQueryResult([]));
+    await expect(consumeInstanceById('RefreshToken', id)).resolves.toBe(false);
   });
 });

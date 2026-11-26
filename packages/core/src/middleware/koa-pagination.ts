@@ -74,14 +74,18 @@ function koaPagination<StateT, ContextT, ResponseBodyT, IsOptional extends boole
       // set both `page` and `page_size` to empty
       const disabled = !rawPageNumber && !rawPageSize && isOptional;
       // Query values are all string, need to convert to number first.
-      const pageNumber = rawPageNumber ? number().positive().parse(Number(rawPageNumber)) : 1;
+      const pageNumber = rawPageNumber ? number().int().positive().parse(Number(rawPageNumber)) : 1;
       const pageSize = rawPageSize
-        ? number().positive().max(maxPageSize).parse(Number(rawPageSize))
+        ? number().int().positive().max(maxPageSize).parse(Number(rawPageSize))
         : defaultPageSize;
+      const offset = (pageNumber - 1) * pageSize;
+      if (!Number.isSafeInteger(offset) || offset > 2_147_483_647) {
+        throw new Error('Pagination offset out of safe range.');
+      }
 
       ctx.pagination = disabled
         ? { disabled, totalCount: undefined, offset: undefined, limit: undefined }
-        : { disabled, totalCount: undefined, offset: (pageNumber - 1) * pageSize, limit: pageSize };
+        : { disabled, totalCount: undefined, offset, limit: pageSize };
     } catch {
       throw new RequestError({ code: 'guard.invalid_pagination', status: 400 });
     }

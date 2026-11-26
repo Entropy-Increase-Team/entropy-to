@@ -107,7 +107,7 @@ export default function logtoConfigRoutes<T extends ManagementApiRouter>(
       const updatedSessionConfig = { ...sessionConfig, ...ctx.guard.body };
 
       await updateOidcConfigsByKey(LogtoOidcConfigKey.Session, updatedSessionConfig);
-      void tenant.invalidateCache();
+      await tenant.invalidateCache();
 
       ctx.body = {
         ttl: defaults.sessionTtl,
@@ -170,7 +170,7 @@ export default function logtoConfigRoutes<T extends ManagementApiRouter>(
               existingKeys.filter(({ id }) => id !== keyId)
             );
           })());
-      void tenant.invalidateCache();
+      await tenant.invalidateCache();
 
       ctx.status = 204;
 
@@ -220,7 +220,7 @@ export default function logtoConfigRoutes<T extends ManagementApiRouter>(
               await updateOidcConfigsByKey(configKey, updatedKeys);
               return updatedKeys;
             })();
-      void tenant.invalidateCache();
+      await tenant.invalidateCache();
 
       // Remove actual values of the private keys from response
       ctx.body = await getRedactedOidcKeyResponse(configKey, updatedKeys);

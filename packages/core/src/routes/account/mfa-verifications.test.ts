@@ -416,6 +416,50 @@ describe('account mfa verification routes', () => {
         },
       ]);
     });
+
+    it('returns only WebAuthn verifications when fields.mfa is Off and fields.passkey is ReadOnly', async () => {
+      const passkeyOnlyRequest = createRequester({
+        middlewares: [koaI18next(), koaErrorHandler()],
+        authedRoutes: [
+          (router) => {
+            router.use(async (ctx, next) => {
+              ctx.auth = {
+                ...ctx.auth,
+                id: mockUser.id,
+                identityVerified: true,
+                scopes: new Set([UserScope.Identities]),
+              };
+              ctx.accountCenter = {
+                enabled: true,
+                fields: {
+                  mfa: AccountCenterControlValue.Off,
+                  passkey: AccountCenterControlValue.ReadOnly,
+                },
+              };
+              ctx.appendDataHookContext = jest.fn();
+              return next();
+            });
+          },
+          accountMfaRoutes as never,
+        ],
+        tenantContext,
+      });
+
+      findUserById.mockResolvedValueOnce({
+        ...mockUser,
+        mfaVerifications: [mockUserTotpMfaVerification, mockUserWebAuthnMfaVerification],
+      });
+
+      const response = await passkeyOnlyRequest.get('/my-account/mfa-verifications');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual([
+        expect.objectContaining({
+          id: mockUserWebAuthnMfaVerification.id,
+          type: MfaFactor.WebAuthn,
+        }),
+      ]);
+    });
   });
 
   describe('GET /api/my-account/mfa-verifications/backup-codes', () => {

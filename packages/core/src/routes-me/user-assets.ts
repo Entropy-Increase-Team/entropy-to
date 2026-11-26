@@ -1,5 +1,4 @@
 import { readFile } from 'node:fs/promises';
-import path from 'node:path';
 
 import { consoleLog } from '@logto/cli/lib/utils.js';
 import {
@@ -22,6 +21,7 @@ import type { RouterInitArgs } from '#src/routes/types.js';
 import SystemContext from '#src/tenants/SystemContext.js';
 import assertThat from '#src/utils/assert-that.js';
 import { buildUploadFile } from '#src/utils/storage/index.js';
+import { assertSafeUploadedAssetContent, buildSafeUploadFilename } from '#src/utils/user-assets.js';
 
 import type { AuthedMeRouter } from './types.js';
 
@@ -87,19 +87,16 @@ export default function userAssetsRoutes<T extends AuthedMeRouter>(...[router]: 
           ? storageProviderConfig.isPublic
           : undefined;
       const uploadFile = buildUploadFile(storageProviderConfig);
-      const safeFilename =
-        path
-          .basename(file.originalFilename)
-          .replaceAll(/[^\w.-]/g, '-')
-          .replace(/^\.+/, '')
-          .slice(0, 128) || 'asset';
+      const safeFilename = buildSafeUploadFilename(file.originalFilename);
+      const fileContent = await readFile(file.filepath);
+      assertSafeUploadedAssetContent(fileContent, file.mimetype);
       const objectKey = `${adminTenantId}/${userId}/${format(
         new Date(),
         'yyyy/MM/dd'
       )}/${generateStandardId(8)}/${safeFilename}`;
 
       try {
-        const { url } = await uploadFile(await readFile(file.filepath), objectKey, {
+        const { url } = await uploadFile(fileContent, objectKey, {
           contentType: file.mimetype,
           publicUrl,
           isPublic,

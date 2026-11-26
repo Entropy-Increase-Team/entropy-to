@@ -22,8 +22,8 @@ const maxSubscriptionCacheTtl = 24 * 60 * 60; // 24 hours in seconds
  */
 const getSubscriptionCacheExpiration = (currentPeriodEnd: string) => {
   const expiration = Math.floor((new Date(currentPeriodEnd).getTime() - Date.now()) / 1000);
-  // Make sure the expiration is not less than 0 (in case the subscription period has already ended) and not greater than `maxSubscriptionCacheTtl`
-  return Math.min(Math.max(expiration, 0), maxSubscriptionCacheTtl);
+  // Clamp TTL between 1 second and `maxSubscriptionCacheTtl` so Redis `SET ... EX` never receives 0.
+  return Math.min(Math.max(expiration, 1), maxSubscriptionCacheTtl);
 };
 
 const tokenUsageCacheTtl = 60 * 60 * 1000; // 1 hour in milliseconds

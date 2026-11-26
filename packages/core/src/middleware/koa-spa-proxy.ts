@@ -44,7 +44,7 @@ export default function koaSpaProxy<StateT, ContextT extends IRouterParamContext
           getConsoleLogFromContext(ctx).plain(`\tproxy --> ${target}`);
         },
         rewrite: (requestPath) => {
-          return '/' + path.join(prefix, requestPath);
+          return '/' + path.posix.join(prefix, requestPath);
         },
       });
 
