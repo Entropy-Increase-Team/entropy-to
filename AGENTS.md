@@ -42,3 +42,18 @@ Every `eslint-disable` must include a short reason explaining why the suppressio
 ## Commit Hooks
 
 Never bypass commit hooks. Many packages depend on each other through built artifacts; when checks fail because local package outputs are stale or missing, run `pnpm prepack` before retrying.
+
+## Agent Knowledge Base
+
+Persistent architecture, subsystem deep-dives, workflow rules, and security review baselines live under `docs/agent/`. Before working on a subsystem, read the corresponding guide instead of loading everything at once:
+
+- `docs/agent/README.md`: Overview, tech stack summary, local port map, and golden rules.
+- `docs/agent/01-architecture-and-runtime.md`: Core startup sequence, dual-port HTTP/HTTP2 listeners, two-tier Koa middleware stack, `TenantPool` lifecycle, Redis generation cache, and worker pools.
+- `docs/agent/02-monorepo-packages-and-tech-stack.md`: Complete catalog of the 22 workspace packages + 57 connectors, 5-tier dependency graph, and codegen/build pipelines.
+- `docs/agent/03-database-schemas-and-rls.md`: `@logto/schemas` codegen, per-tenant PostgreSQL roles & `RESTRICTIVE` RLS policies, leakproof index & derived-column trigger rules, Slonik builders, and alteration rules.
+- `docs/agent/04-oidc-saml-sso-and-security.md`: `node-oidc-provider` fork integration, OAuth grants & Organization Tokens, Consent & CIMD, SAML 2.0 IdP, Enterprise SSO SP & JIT provisioning, Custom JWT, Secret Vault encryption, key rotation, and SSRF protection.
+- `docs/agent/05-auth-flows-and-api-surfaces.md`: Core HTTP API surfaces, `ExperienceInteraction` state machine (v2), Sentinel protection, Account Center field-level permissions & step-up auth, and Management API (`koaGuard` + OpenAPI).
+- `docs/agent/06-frontend-cli-and-i18n.md`: SPA hosting & SSR injection, `experience`, `console` (`CONVENTION.md` & RHF rules), `account`, `elements`, dual-package i18n (`phrases` / `phrases-experience`), `@logto/cli`, and `@logto/tunnel`.
+- `docs/agent/07-connectors-webhooks-and-job-queue.md`: `@logto/connector-kit`, connector inventory, i18n email templates, Webhook events & HMAC signing, and `@logto/job-queue` durable worker architecture.
+- `docs/agent/08-dev-workflow-and-windows-guide.md`: Dev/test commands, commitlint scopes/types, ESLint constraints, and Windows native vs WSL2 development notes.
+- `docs/agent/09-code-and-security-review.md`: Audited baseline catalog of security vulnerabilities, protocol compliance gaps, concurrency races, and logic bugs with exact file/line references and remediations.
