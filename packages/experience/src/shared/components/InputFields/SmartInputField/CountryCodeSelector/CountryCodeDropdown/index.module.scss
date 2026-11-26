@@ -101,6 +101,8 @@
     @include _.flex-column;
     align-items: stretch;
     height: 100%;
+    padding-top: max(_.unit(2), env(safe-area-inset-top));
+    padding-bottom: max(_.unit(2), env(safe-area-inset-bottom));
   }
 
   .countryList {

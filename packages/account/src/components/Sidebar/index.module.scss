@@ -26,11 +26,11 @@
   transition: background 0.2s ease-in-out;
 
   &:hover {
-    background: var(--color-hover-variant);
+    background: var(--color-overlay-brand-hover);
   }
 
   &.active {
-    background: var(--color-focused-variant);
+    background: var(--color-overlay-brand-focused);
     color: var(--color-type-link);
   }
 }

@@ -5,6 +5,7 @@ import { LitElement, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 
 import { createMockAccountApi } from '../__mocks__/account-api.js';
+import { LogtoAccountApi } from '../api/index.js';
 
 import {
   logtoAccountContext,
@@ -104,5 +105,37 @@ suite('logto-account-provider', () => {
     );
 
     assert.equal(dispatchedErrorEvent?.error.message, errorMessage);
+  });
+
+  test('LogtoAccountApi fetches user profile from /api/my-account with Bearer token', async () => {
+    const originalFetch = window.fetch;
+    // eslint-disable-next-line @silverhand/fp/no-let -- test spy capture
+    let capturedUrl = '';
+    // eslint-disable-next-line @silverhand/fp/no-let -- test spy capture
+    let capturedAuth = '';
+
+    // eslint-disable-next-line @silverhand/fp/no-mutation -- stub fetch for unit test
+    window.fetch = async (input, init) => {
+      const request = input instanceof Request ? input : new Request(input, init);
+      // eslint-disable-next-line @silverhand/fp/no-mutation -- test spy capture
+      capturedUrl = request.url;
+      // eslint-disable-next-line @silverhand/fp/no-mutation -- test spy capture
+      capturedAuth = request.headers.get('Authorization') ?? '';
+      return new Response(JSON.stringify({ id: 'u_my_account' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    };
+
+    try {
+      const api = new LogtoAccountApi('https://tenant.logto.app', async () => 'tok_123');
+      const profile = await api.fetchUserProfile();
+      assert.equal(profile.id, 'u_my_account');
+      assert.equal(capturedUrl, 'https://tenant.logto.app/api/my-account');
+      assert.equal(capturedAuth, 'Bearer tok_123');
+    } finally {
+      // eslint-disable-next-line @silverhand/fp/no-mutation -- restore fetch
+      window.fetch = originalFetch;
+    }
   });
 });

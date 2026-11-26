@@ -11,12 +11,15 @@
 }
 
 .modal {
+  display: flex;
+  flex-direction: column;
   background: var(--color-bg-float);
   border-radius: _.unit(4);
   padding: _.unit(6);
   max-width: 600px;
+  max-height: calc(100dvh - _.unit(8));
   width: calc(100% - _.unit(8));
-  box-shadow: var(--shadow-2);
+  box-shadow: var(--color-shadow-2);
 }
 
 .header {
@@ -48,6 +51,9 @@
 .content {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   gap: _.unit(4);
   margin-bottom: _.unit(6);
 }

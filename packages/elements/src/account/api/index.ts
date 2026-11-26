@@ -44,6 +44,6 @@ export class LogtoAccountApi {
   }
 
   async fetchUserProfile() {
-    return this.ky.get('api/profile').json<UserProfile>();
+    return this.ky.get('api/my-account').json<UserProfile>();
   }
 }

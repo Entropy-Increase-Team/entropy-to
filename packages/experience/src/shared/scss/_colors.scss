@@ -20,6 +20,7 @@
   --color-neutral-80: #c4c7c7;
   --color-neutral-90: #e0e3e3;
   --color-neutral-95: #eff1f1;
+  --color-neutral-99: #f7f8f8;
   --color-neutral-100: #fff;
 
   --color-neutral-variant-60: #928f9a;
@@ -108,6 +109,7 @@
   --color-overlay-brand-focused: rgba(93, 52, 242, 16%); // 16% --color-brand-default
 
   --color-surface: var(--color-neutral-99);
+  --color-surface-1: var(--color-bg-layer-2);
 }
 
 @mixin dark {
@@ -146,6 +148,7 @@
   --color-brand-70: #7958ff;
 
   --color-surface: var(--color-neutral-99);
+  --color-surface-1: var(--color-bg-layer-2);
   --color-surface-2:
     linear-gradient(0deg, rgba(202, 190, 255, 8%), rgba(202, 190, 255, 8%)),
     linear-gradient(0deg, rgba(196, 199, 199, 2%), rgba(196, 199, 199, 2%)),

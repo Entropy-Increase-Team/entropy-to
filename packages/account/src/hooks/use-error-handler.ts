@@ -25,12 +25,14 @@ const useErrorHandler = () => {
 
           const { code, message } = logtoError;
 
-          const handler = errorHandlers?.[code] ?? errorHandlers?.global;
+          const specificHandler = errorHandlers?.[code];
 
-          if (handler) {
-            await handler(logtoError);
+          if (specificHandler) {
+            await specificHandler(logtoError);
           } else if (error.response.status === 401 && code === 'auth.unauthorized') {
             requestReauthPrompt();
+          } else if (errorHandlers?.global) {
+            await errorHandlers.global(logtoError);
           } else {
             setToast(message);
           }

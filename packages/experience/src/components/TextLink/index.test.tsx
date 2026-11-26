@@ -12,4 +12,14 @@ describe('TextLink', () => {
     const { queryByText } = render(<TextLink href="#" text="description.terms_of_use" />);
     expect(queryByText('description.terms_of_use')).not.toBeNull();
   });
+
+  it('sets rel="noopener noreferrer" when target="_blank"', () => {
+    const { getByRole } = render(
+      <TextLink href="https://example.com/privacy" target="_blank">
+        Privacy
+      </TextLink>
+    );
+    const link = getByRole('link');
+    expect(link.getAttribute('rel')).toBe('noopener noreferrer');
+  });
 });

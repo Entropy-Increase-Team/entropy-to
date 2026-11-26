@@ -190,3 +190,22 @@
 | **M-08** | **已修复** | 云片连接器脱敏未知错误日志；腾讯云/阿里云短信连接器剔除 `uiLocales` 与非原始类型对象并支持通用模板回退；`connector-linkedin` 与 `connector-slack` 修正 `avatar` 字段名 |
 | **M-09** | **已修复** | `@logto/tunnel` 修复 JSON 数组响应重写、`finally` 句柄关闭、非 GET/HEAD 返回 `405`、带参路径 MIME 与 `/consent` 识别、`deploy --verbose` 令牌脱敏；`@logto/cli` 拦截空字符串/非法回滚时间戳 |
 | **L-03** | **已修复** | `@logto/cli` `loadConnector` 使用 `pathToFileURL` 修复 Windows ESM 动态导入；`koaConsoleRedirectProxy` 改用 `path.posix.join` |
+
+---
+
+## 六、二轮深度代码审查与前端 Token / 响应式 / UI-UX 全量 TDD 加固台账
+
+经多子智能体二次逐行复审与全仓单元、组件浏览器及回归测试验证，进一步完成以下高价值架构、安全、高可用与前端体验修复：
+
+1. **核心鉴权、高可用与存储安全（`@logto/core` & `@logto/core-kit`）**：
+   - **Account Center 字段权限严密闭环**：`getAccountCenterFilteredProfile` 显式解构并按 `fields.social` 过滤 `ssoIdentities`（阻断 `...rest` 泄漏企业 SSO 身份及原始属性）；`logto-configs` 移除 `fields.mfa ?? fields.passkey` 反向回退（防止未启用 MFA 编辑时越权修改 MFA 配置）；`GET /my-account/mfa-verifications` 在 `fields.mfa = Off` 且 `fields.passkey` 可读时仅返回 `WebAuthn` 凭据。
+   - **令牌核销与自定义 JWT 隔离**：`consumeInstanceById('RefreshToken')` 改为严格校验 `rowCount > 0`（阻断已吊销刷新令牌核销放行）；`consumeSubjectToken` 在 SQL 层补齐 `expires_at > now()` 原子校验；`PooledWorker` 启动参数增加 `env: {}` 隔离宿主进程敏感环境变量，并将 `organization_id` 与 `act` 纳入保留声明集合且后置合并 Logto 权威声明。
+   - **数据库、分页、缓存与静态资源健壮性**：`buildUpdateWhereWithPool` 拦截 `where` 中 `undefined` 字段防止误扩更新范围；`koaPagination` 强制正整数与安全 `OFFSET` 上界；`EnvSet.load` 半途失败自动 `pool.end()` 释放连接池；OIDC/CIMD 配置变更路由改为 `await tenant.invalidateCache()`；订阅 Redis 缓存最小 TTL 下界设为 `1s` 避免 `EX 0` 报错；`parseRange` 锚定完整正则与安全整数并在 `koaServeCustomUiAssets` 中通过 `Promise.allSettled` 安全销毁异常流、裁剪 `Content-Range` 尾字节及放行 `/direct/*` 含点号目标路由；`user-assets` 统一跨平台安全文件名截断并拦截含 `<script>`/`<foreignObject>`/`on*`/`javascript:` 的高危 SVG 上传；`koaAppSecretTranspilation` 安全解码百分号并按首个冒号切分 `Basic` 凭证；`env-set/utils`、`cloudflare`、`koaSpaProxy` 全部统一为 `path.posix.join`。
+2. **连接器、CLI 与 Tunnel 跨平台及边界加固**：
+   - **`connector-azuread`**：使用 `appendPath(new URL(cloudInstance), tenantId)` 替代 `new URL(path.join(...))`，彻底修复 Windows 平台 `Invalid URL` 崩溃。
+   - **`connector-apple` / `connector-oidc` / `connector-saml` / `connector-slack` / `connector-linkedin`**：`connector-apple` 仅对 `jwtVerify` 捕获映射 `SocialIdTokenInvalid`，保留会话缺失错误并兼容原生客户端自生成 `nonce`；`connector-oidc` 移除模块加载期静态 `new Date()` 默认值、前置展开 `customConfig` 防止覆盖 `state`/`nonce` 并补齐超时配置；`connector-saml` 在 `getAuthorizationUri` 增加 IdP Metadata XML 校验并兼容已有查询参数的 `redirectUri`；`connector-slack` 改用 `base64url` 解码与 `safeParse` 校验 `{ ok: true }`，并与 `connector-linkedin` 同步增加空会话防护。
+   - **`connector-mailgun` / `connector-tencent-sms` / `connector-yunpian-sms`**：`connector-mailgun` 同步加固 `mailgunConfigGuard` 域名/端点校验并对 `subject`、`h:Reply-To`、`from` 剥离头部控制字符；`connector-tencent-sms` 固定位置参数提取顺序防止额外字段错位填充 `{1}`；`connector-yunpian-sms` 使用 `trySafe` 包裹 HTTP 400 错误体解析并补齐请求超时。
+   - **`@logto/cli` & `@logto/tunnel`**：`rollback-to-timestamp` 仅回滚已部署的数据库变更并在 `try/finally` 中关闭连接池、拦截 `Infinity` 与毫秒级时间戳；连接器安装白名单禁止首字符 `-`/`~` 及反斜杠路径段并支持 `~` 语义化版本；`tunnel` 静态代理拦截目录路径返回 `404`、`HEAD` 请求免读文件体返回精确 `Content-Length`、`405` 补齐 `Allow: GET, HEAD`、多表单 HTML 全量替换并脱敏 `--verbose` 令牌日志。
+3. **前端鉴权状态 Token、CSS 设计 Token、移动端响应式与 UI/UX 加固**：
+   - **鉴权与构建状态**：`use-single-sign-on` 补齐原生 WebView 分支 `return` 早退及 Web 流残留回调链接清理；`handleSearchParametersData` 在 `/callback/*` 回跳时保留 `organization_id` 与 `ui_locales`；`UserInteractionContextProvider` 在 `setVerificationId` 内同步落盘 `sessionStorage` 消除跳转竞态；`CustomContent` 基于 `DOMParser` 剥离危险脚本标签与事件属性；`account/vite.config.ts` 归一化 Windows 路径分隔符确保 `@/` 别名转换生效；`@logto/elements` 修正个人资料接口路径为 `api/my-account`。
+   - **CSS 设计 Token 与移动端交互体验**：修复 `@logto/core-kit`（`--font-display-1: 48px/56px`、`--color-all-100`、暗色 `--color-code-dark-bg-hover/pressed`）、`@logto/experience`（补齐亮色 `--color-neutral-99` 与亮暗 `--color-surface-1`）、`@logto/account`（`Sidebar`、`ConfirmModal`、`EditProfileFieldModal`、`CodeFlow` 未定义变量）、`@logto/elements`（`logto-identity-info` 与 `logto-profile-item` 变量拼写及 `display: flex`）及 `@logto/console` 6 处失效设计 Token；修复 `Account Center` 在 `<= 1060px` 视口下导航栏消失断层、多字段编辑弹窗 `100dvh` 内部滚动、移动端日期输入 `16px` 防 iOS 自动缩放、`320px` 窄屏 6 位验证码自适应间距与刘海屏安全区留白；修复 `TextLink` 仅在原生 WebView 劫持 `IframeModal` 并补齐 `noopener noreferrer`、`Consent` 空字符串条款链接判断、`useErrorHandler` `401` 重认证优先级以及备用码重新生成重试与 Passkey 预拉取异常恢复。

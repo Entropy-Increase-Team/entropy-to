@@ -174,6 +174,8 @@ const BackupCodeBinding = ({ isRegenerate }: Props) => {
         await handleError(deleteError);
         return;
       }
+
+      setExistingBackupCodeId(undefined);
     }
 
     const [error] = await addBackupCodeRequest({ codes });

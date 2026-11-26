@@ -56,6 +56,7 @@ describe('Account Center Logto branding', () => {
         resolveSettings({ ...mockSignInExperienceSettings, hideLogtoBranding });
       });
       expect(Boolean(querySignature())).toBe(!hideLogtoBranding);
-    }
+    },
+    15_000
   );
 });

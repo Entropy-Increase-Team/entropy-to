@@ -1,4 +1,4 @@
-import { useContext } from 'react';
+import { type AnchorHTMLAttributes, useContext } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 
 import PageContext from '@/Providers/PageContextProvider/PageContext';
@@ -6,8 +6,18 @@ import TextLink from '@/components/TextLink';
 
 import styles from './index.module.scss';
 
-const TextLinkComponent = ({ href, text }: { readonly href: string; readonly text: string }) => (
-  <TextLink href={href}>{text}</TextLink>
+const TextLinkComponent = ({
+  href,
+  text,
+  target,
+}: {
+  readonly href: string;
+  readonly text: string;
+  readonly target?: AnchorHTMLAttributes<HTMLAnchorElement>['target'];
+}) => (
+  <TextLink href={href} target={target}>
+    {text}
+  </TextLink>
 );
 
 const SupportInfo = () => {
@@ -37,7 +47,13 @@ const SupportInfo = () => {
         <div className={styles.message}>
           <Trans
             components={{
-              link: <TextLinkComponent href={supportWebsiteUrl} text={supportWebsiteUrl} />,
+              link: (
+                <TextLinkComponent
+                  href={supportWebsiteUrl}
+                  text={supportWebsiteUrl}
+                  target="_blank"
+                />
+              ),
             }}
           >
             {t('description.support_website')}

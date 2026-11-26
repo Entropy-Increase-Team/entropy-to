@@ -38,6 +38,7 @@
     input {
       background: inherit;
       color: var(--color-type-primary);
+      font: var(--font-body-2);
       /* stylelint-disable-next-line property-no-unknown */
       field-sizing: content;
       opacity: 0%;
@@ -57,6 +58,7 @@
 
     .separator {
       color: var(--color-type-secondary);
+      font: var(--font-body-2);
       opacity: 0%;
 
       &.active {
@@ -73,5 +75,14 @@
 
   .errorMessage {
     color: var(--color-danger-default);
+  }
+}
+
+:global(body.mobile) {
+  .dateFieldContainer .dateInputWrapper {
+    input,
+    .separator {
+      font: var(--font-body-1);
+    }
   }
 }
