@@ -102,8 +102,9 @@ Each social identity provider could have their own variant on OAuth standard pro
 | tokenEndpointResponseType | enum                   | false    |
 | responseType              | string                 | false    |
 | grantType                 | string                 | false    |
-| tokenEndpoint             | string                 | false    |
+| tokenEndpoint             | string                 | true     |
 | scope                     | string                 | false    |
+| enablePkce                | boolean                | false    |
 | customConfig              | Record<string, string> | false    |
 | profileMap                | ProfileMap             | false    |
 | disableEmailSync          | boolean                | false    |

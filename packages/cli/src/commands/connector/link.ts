@@ -45,7 +45,9 @@ const link: CommandModule<{ path?: string }, { path?: string; cloud: boolean; mo
           const targetPath = path.join(connectorDirectory, '@logto-' + packageName);
 
           await fs.rm(targetPath, { recursive: true, force: true });
-          await fs.symlink(path.relative(connectorDirectory, packagePath), targetPath);
+          await (process.platform === 'win32'
+            ? fs.symlink(path.resolve(packagePath), targetPath, 'junction')
+            : fs.symlink(path.relative(connectorDirectory, packagePath), targetPath));
         } catch (error) {
           consoleLog.warn(error);
 

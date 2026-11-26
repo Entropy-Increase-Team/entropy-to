@@ -16,7 +16,12 @@ import {
   ConnectorType,
   jsonGuard,
 } from '@logto/connector-kit';
-import { constructAuthorizationUri } from '@logto/connector-oauth';
+import {
+  constructAuthorizationUri,
+  generateCodeChallenge,
+  generateCodeVerifier,
+  sanitizeCustomAuthParameters,
+} from '@logto/connector-oauth';
 import { generateStandardId } from '@logto/shared/universal';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { HTTPError } from 'ky';
@@ -44,6 +49,8 @@ const getAuthorizationUri =
     const parsedConfig = oidcConnectorConfigGuard.parse(config);
 
     const nonce = generateNonce();
+    const codeVerifier = parsedConfig.enablePkce ? generateCodeVerifier() : undefined;
+    const codeChallenge = codeVerifier ? generateCodeChallenge(codeVerifier) : undefined;
 
     assert(
       setSession,
@@ -51,7 +58,11 @@ const getAuthorizationUri =
         message: 'Function `setSession()` is not implemented',
       })
     );
-    await setSession({ nonce, redirectUri });
+    await setSession({
+      nonce,
+      redirectUri,
+      ...conditional(codeVerifier && { codeVerifier }),
+    });
 
     const {
       authorizationEndpoint,
@@ -64,13 +75,19 @@ const getAuthorizationUri =
 
     return constructAuthorizationUri(authorizationEndpoint, {
       ...authRequestOptionalConfig,
-      ...customConfig,
+      ...sanitizeCustomAuthParameters(customConfig),
       responseType,
       clientId,
       scope: customScope ?? scope,
       redirectUri,
       state,
       nonce,
+      ...conditional(
+        codeChallenge && {
+          codeChallenge,
+          codeChallengeMethod: 'S256',
+        }
+      ),
     });
   };
 
@@ -151,6 +168,41 @@ const parseUserInfoFromIdToken = async (
   }
 };
 
+const resolveOidcSession = async (
+  getSession:
+    | (() => Promise<{ nonce?: string; redirectUri?: string; codeVerifier?: unknown } | undefined>)
+    | undefined,
+  enablePkce: boolean
+) => {
+  assert(
+    getSession,
+    new ConnectorError(ConnectorErrorCodes.NotImplemented, {
+      message: 'Function `getSession()` is not implemented.',
+    })
+  );
+
+  const { nonce, redirectUri, codeVerifier } = (await getSession()) ?? {};
+  assert(
+    redirectUri,
+    new ConnectorError(ConnectorErrorCodes.General, {
+      message: "CAN NOT find 'redirectUri' from connector session.",
+    })
+  );
+
+  if (!enablePkce) {
+    return { nonce, redirectUri };
+  }
+
+  assert(
+    typeof codeVerifier === 'string' && codeVerifier.length > 0,
+    new ConnectorError(ConnectorErrorCodes.General, {
+      message: "CAN NOT find 'codeVerifier' from connector session.",
+    })
+  );
+
+  return { nonce, redirectUri, codeVerifier };
+};
+
 const getUserInfo =
   (getConfig: GetConnectorConfig): GetUserInfo =>
   async (data, getSession) => {
@@ -158,22 +210,12 @@ const getUserInfo =
     validateConfig(config, oidcConnectorConfigGuard);
     const parsedConfig = oidcConnectorConfigGuard.parse(config);
 
-    assert(
+    const { nonce, redirectUri, codeVerifier } = await resolveOidcSession(
       getSession,
-      new ConnectorError(ConnectorErrorCodes.NotImplemented, {
-        message: 'Function `getSession()` is not implemented.',
-      })
-    );
-    const { nonce, redirectUri } = await getSession();
-
-    assert(
-      redirectUri,
-      new ConnectorError(ConnectorErrorCodes.General, {
-        message: "CAN NOT find 'redirectUri' from connector session.",
-      })
+      parsedConfig.enablePkce
     );
 
-    const tokenResponse = await getIdToken(parsedConfig, data, redirectUri);
+    const tokenResponse = await getIdToken(parsedConfig, data, redirectUri, codeVerifier);
 
     return parseUserInfoFromIdToken(parsedConfig, tokenResponse, nonce);
   };
@@ -185,22 +227,12 @@ const getTokenResponseAndUserInfo =
     validateConfig(config, oidcConnectorConfigGuard);
     const parsedConfig = oidcConnectorConfigGuard.parse(config);
 
-    assert(
+    const { nonce, redirectUri, codeVerifier } = await resolveOidcSession(
       getSession,
-      new ConnectorError(ConnectorErrorCodes.NotImplemented, {
-        message: 'Function `getSession()` is not implemented.',
-      })
-    );
-    const { nonce, redirectUri } = await getSession();
-
-    assert(
-      redirectUri,
-      new ConnectorError(ConnectorErrorCodes.General, {
-        message: "CAN NOT find 'redirectUri' from connector session.",
-      })
+      parsedConfig.enablePkce
     );
 
-    const tokenResponse = await getIdToken(parsedConfig, data, redirectUri);
+    const tokenResponse = await getIdToken(parsedConfig, data, redirectUri, codeVerifier);
     const userInfo = await parseUserInfoFromIdToken(parsedConfig, tokenResponse, nonce);
 
     return {
@@ -214,7 +246,8 @@ const getAccessTokenByRefreshToken =
   async (refreshToken: string) => {
     const config = await getConfig(defaultMetadata.id);
     validateConfig(config, oidcConnectorConfigGuard);
-    return _getAccessTokenByRefreshToken(config, refreshToken);
+    const parsedConfig = oidcConnectorConfigGuard.parse(config);
+    return _getAccessTokenByRefreshToken(parsedConfig, refreshToken);
   };
 
 const createOidcConnector: CreateConnector<SocialConnector> = async ({ getConfig }) => {

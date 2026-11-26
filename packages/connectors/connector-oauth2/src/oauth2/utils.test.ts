@@ -184,6 +184,56 @@ describe('constructAuthorizationUri', () => {
     expect(result).toBe(`${authorizationEndpoint}?${expectedParams}`);
   });
 
+  it('merges onto existing authorizationEndpoint query parameters and rejects non-http schemes', () => {
+    const result = constructAuthorizationUri('https://example.com/oauth/authorize?p=B2C_1_signin', {
+      responseType: 'code',
+      clientId: 'client123',
+      redirectUri: 'https://example.com/callback',
+      state: 'state123',
+    });
+
+    const parsed = new URL(result);
+    expect(parsed.searchParams.get('p')).toBe('B2C_1_signin');
+    expect(parsed.searchParams.get('response_type')).toBe('code');
+    expect(result.split('?')).toHaveLength(2);
+
+    expect(() =>
+      // eslint-disable-next-line no-script-url -- testing rejection of unsafe javascript: endpoint scheme
+      constructAuthorizationUri('javascript:alert(1)//', {
+        responseType: 'code',
+        clientId: 'client123',
+        redirectUri: 'https://example.com/callback',
+        state: 'state123',
+      })
+    ).toThrow();
+  });
+
+  it('does not leak snake_case client_secret in ClientSecretBasic token requests', async () => {
+    nock(tokenEndpointUrl.origin)
+      .post(tokenEndpointUrl.pathname)
+      .reply(200, { access_token: 'access_token', token_type: 'Bearer' });
+
+    await requestTokenEndpoint({
+      tokenEndpoint: 'https://example.com/token',
+      tokenEndpointAuthOptions: {
+        method: TokenEndpointAuthMethod.ClientSecretBasic,
+      },
+      tokenRequestBody: {
+        grantType: 'authorization_code',
+        code: 'authcode123',
+        redirectUri: 'https://example.com/callback',
+        clientId: 'client123',
+        clientSecret: 'secret123',
+        client_secret: 'injected_secret',
+        extraParam: 'extra',
+      },
+    });
+
+    const lastCallBody = kyPostMock.mock.calls.at(-1)?.[1]?.body;
+    expect(lastCallBody).toBeInstanceOf(URLSearchParams);
+    expect(String(lastCallBody)).not.toContain('client_secret');
+  });
+
   it('should surface the error response body from the token endpoint', async () => {
     const errorBody = { status: 403, message: 'invalid client secret' };
     const failingTokenEndpoint = 'https://failing.example.com/token';

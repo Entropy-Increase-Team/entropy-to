@@ -5,6 +5,7 @@ import {
   authorizationEndpointFormItem,
   clientIdFormItem,
   clientSecretFormItem,
+  enablePkceFormItem,
   scopeFormItem,
   tokenEndpointAuthOptionsFormItems,
   tokenEndpointFormItem,
@@ -59,6 +60,7 @@ export const defaultMetadata: ConnectorMetadata = {
       defaultValue: 'query-string',
     },
     scopeFormItem,
+    enablePkceFormItem,
     {
       key: 'profileMap',
       label: 'Profile Map',

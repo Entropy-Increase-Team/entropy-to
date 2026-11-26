@@ -37,18 +37,26 @@ describe('search parameters utils', () => {
   });
 
   it.each(['/callback/github', '/callback/social/github'])(
-    'keeps confirm_redirect_policy, organization_id, and ui_locales on a %s load',
+    'keeps existing session values and ignores upstream IdP query params on %s',
     (pathname) => {
+      sessionStorage.setItem('app_id', 'logto_app_1');
       sessionStorage.setItem('confirm_redirect_policy', 'password');
       sessionStorage.setItem('organization_id', 'org_123');
       sessionStorage.setItem('ui_locales', 'zh-CN');
-      window.history.pushState(window.history.state, '', `${pathname}?code=foo&state=bar`);
+      window.history.pushState(
+        window.history.state,
+        '',
+        `${pathname}?app_id=upstream_alipay_app&organization_id=upstream_org&ui_locales=ar&code=foo&state=bar`
+      );
       handleSearchParametersData();
 
+      expect(sessionStorage.getItem('app_id')).toBe('logto_app_1');
       expect(sessionStorage.getItem('confirm_redirect_policy')).toBe('password');
       expect(sessionStorage.getItem('organization_id')).toBe('org_123');
       expect(sessionStorage.getItem('ui_locales')).toBe('zh-CN');
-      expect(window.location.search).toBe('?code=foo&state=bar');
+      expect(window.location.search).toBe(
+        '?app_id=upstream_alipay_app&organization_id=upstream_org&ui_locales=ar&code=foo&state=bar'
+      );
     }
   );
 });

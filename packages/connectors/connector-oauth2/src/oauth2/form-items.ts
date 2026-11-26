@@ -94,3 +94,13 @@ export const scopeFormItem: ConnectorConfigFormItem = Object.freeze({
   required: false,
   placeholder: 'Enter the scopes (separated by a space)',
 });
+
+export const enablePkceFormItem: ConnectorConfigFormItem = Object.freeze({
+  key: 'enablePkce',
+  label: 'Enable PKCE',
+  type: ConnectorConfigFormItemType.Switch,
+  required: false,
+  defaultValue: false,
+  description:
+    'Use Proof Key for Code Exchange (PKCE, S256) when requesting authorization codes and exchanging tokens.',
+});

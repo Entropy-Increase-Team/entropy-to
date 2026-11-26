@@ -120,4 +120,64 @@ describe('getUserInfo', () => {
       })
     );
   });
+
+  it('supports PKCE S256 end-to-end and default auth method in getAccessTokenByRefreshToken', async () => {
+    const pkceConnector = await createConnector({
+      getConfig: vi.fn().mockResolvedValue({ ...mockConfig, enablePkce: true }),
+    });
+    const setSession = vi.fn();
+    const authUri = await pkceConnector.getAuthorizationUri(
+      {
+        state: 'oidc_pkce_state',
+        redirectUri: 'http://localhost:3001/callback/oidc',
+        connectorId: 'oidc_1',
+        connectorFactoryId: 'oidc',
+        jti: 'jti_1',
+        headers: {},
+      },
+      setSession
+    );
+
+    const parsedUri = new URL(authUri);
+    expect(parsedUri.searchParams.get('code_challenge_method')).toBe('S256');
+    expect(parsedUri.searchParams.get('code_challenge')).toBeTruthy();
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- mock call argument inspection in test
+    const savedSession: { nonce: string; redirectUri: string; codeVerifier: string } =
+      setSession.mock.calls[0]?.[0];
+    expect(savedSession.codeVerifier).toBeTruthy();
+
+    jwtVerify.mockImplementationOnce(() => ({
+      payload: { sub: 'oidc_user_1', nonce: savedSession.nonce },
+    }));
+    const tokenEndpointUrl = new URL(mockConfig.tokenEndpoint);
+    nock(tokenEndpointUrl.origin)
+      .post(
+        tokenEndpointUrl.pathname,
+        (body: Record<string, string>) => body.code_verifier === savedSession.codeVerifier
+      )
+      .reply(200, {
+        id_token: 'id_token',
+        access_token: 'access_token',
+      });
+
+    const userInfo = await pkceConnector.getUserInfo(
+      { code: 'oidc_code' },
+      async () => savedSession
+    );
+    expect(userInfo.id).toBe('oidc_user_1');
+
+    nock(tokenEndpointUrl.origin)
+      .post(
+        tokenEndpointUrl.pathname,
+        (body: Record<string, string>) =>
+          body.grant_type === 'refresh_token' && body.refresh_token === 'oidc_rt'
+      )
+      .reply(200, {
+        id_token: 'new_id_token',
+        access_token: 'new_access_token',
+      });
+    const refreshed = await pkceConnector.getAccessTokenByRefreshToken?.('oidc_rt');
+    expect(refreshed?.access_token).toBe('new_access_token');
+  });
 });

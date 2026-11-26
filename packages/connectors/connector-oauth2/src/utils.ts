@@ -1,15 +1,16 @@
-import { assert, getSafe } from '@silverhand/essentials';
+import { conditional, assert, getSafe } from '@silverhand/essentials';
 
 import { ConnectorError, ConnectorErrorCodes, parseJson } from '@logto/connector-kit';
 import { type KyResponse } from 'ky';
 import qs from 'query-string';
 
+import { defaultTimeout } from './constant.js';
 import {
   type Oauth2AccessTokenResponse,
   oauth2AccessTokenResponseGuard,
   oauth2AuthResponseGuard,
 } from './oauth2/types.js';
-import { requestTokenEndpoint } from './oauth2/utils.js';
+import { requestTokenEndpoint, sanitizeCustomTokenParameters } from './oauth2/utils.js';
 import type { Oauth2ConnectorConfig, TokenEndpointResponseType, ProfileMap } from './types.js';
 import { userProfileGuard } from './types.js';
 
@@ -60,7 +61,8 @@ export const userProfileMapping = (
 export const getAccessToken = async (
   config: Oauth2ConnectorConfig,
   data: unknown,
-  redirectUri: string
+  redirectUri: string,
+  codeVerifier?: string
 ) => {
   const result = oauth2AuthResponseGuard.safeParse(data);
 
@@ -88,13 +90,15 @@ export const getAccessToken = async (
       clientSecretJwtSigningAlgorithm,
     },
     tokenRequestBody: {
+      ...sanitizeCustomTokenParameters(customConfig),
       grantType,
       code,
       redirectUri,
       clientId,
       clientSecret,
-      ...customConfig,
+      ...conditional(codeVerifier && { codeVerifier }),
     },
+    timeout: defaultTimeout,
   });
 
   return accessTokenResponseHandler(tokenResponse, tokenEndpointResponseType);
@@ -121,12 +125,13 @@ export const getAccessTokenByRefreshToken = async (
       clientSecretJwtSigningAlgorithm,
     },
     tokenRequestBody: {
+      ...sanitizeCustomTokenParameters(customConfig),
       grantType: 'refresh_token',
       refreshToken,
       clientId,
       clientSecret,
-      ...customConfig,
     },
+    timeout: defaultTimeout,
   });
 
   return accessTokenResponseHandler(tokenResponse, tokenEndpointResponseType);

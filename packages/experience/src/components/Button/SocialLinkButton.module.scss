@@ -24,9 +24,12 @@
 .name {
   flex: 1;
   overflow: hidden;
-  margin-inline-start: _.unit(-6);
   @include _.flex-row;
   height: 100%;
+
+  &.withLeadingIcon {
+    margin-inline-start: _.unit(-6);
+  }
 
   span {
     @include _.multi-line-ellipsis(2);
@@ -35,10 +38,11 @@
 
   .placeHolder {
     flex: 1;
+    min-width: _.unit(2);
+  }
 
-    &:first-child {
-      min-width: _.unit(10);
-    }
+  &.withLeadingIcon .placeHolder:first-child {
+    min-width: _.unit(10);
   }
 }
 

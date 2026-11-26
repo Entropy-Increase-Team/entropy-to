@@ -34,16 +34,19 @@ const SocialLinkButton = ({
   const localName = name[language] ?? name.en;
 
   const isLoadingActive = useDebouncedLoader(isLoading, 300);
+  const hasLeadingIcon = Boolean(logo) || isLoadingActive;
 
   return (
     <button
-      disabled={isDisabled}
+      disabled={Boolean(isDisabled) || isLoading}
       className={classNames(
         styles.button,
         styles.secondary,
         styles.large,
         socialLinkButtonStyles.socialButton,
-        (isDisabled ?? isLoadingActive) && styles.disabled,
+        isDisabled && styles.disabled,
+        isLoading && styles.loading,
+        isLoadingActive && styles.loadingActive,
         className
       )}
       type="button"
@@ -57,7 +60,12 @@ const SocialLinkButton = ({
           <RotatingRingIcon />
         </span>
       )}
-      <div className={socialLinkButtonStyles.name}>
+      <div
+        className={classNames(
+          socialLinkButtonStyles.name,
+          hasLeadingIcon && socialLinkButtonStyles.withLeadingIcon
+        )}
+      >
         <div className={socialLinkButtonStyles.placeHolder} />
         <span>{t('action.sign_in_with', { name: localName })}</span>
         <div className={socialLinkButtonStyles.placeHolder} />

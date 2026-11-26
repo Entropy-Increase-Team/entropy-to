@@ -209,3 +209,20 @@
 3. **前端鉴权状态 Token、CSS 设计 Token、移动端响应式与 UI/UX 加固**：
    - **鉴权与构建状态**：`use-single-sign-on` 补齐原生 WebView 分支 `return` 早退及 Web 流残留回调链接清理；`handleSearchParametersData` 在 `/callback/*` 回跳时保留 `organization_id` 与 `ui_locales`；`UserInteractionContextProvider` 在 `setVerificationId` 内同步落盘 `sessionStorage` 消除跳转竞态；`CustomContent` 基于 `DOMParser` 剥离危险脚本标签与事件属性；`account/vite.config.ts` 归一化 Windows 路径分隔符确保 `@/` 别名转换生效；`@logto/elements` 修正个人资料接口路径为 `api/my-account`。
    - **CSS 设计 Token 与移动端交互体验**：修复 `@logto/core-kit`（`--font-display-1: 48px/56px`、`--color-all-100`、暗色 `--color-code-dark-bg-hover/pressed`）、`@logto/experience`（补齐亮色 `--color-neutral-99` 与亮暗 `--color-surface-1`）、`@logto/account`（`Sidebar`、`ConfirmModal`、`EditProfileFieldModal`、`CodeFlow` 未定义变量）、`@logto/elements`（`logto-identity-info` 与 `logto-profile-item` 变量拼写及 `display: flex`）及 `@logto/console` 6 处失效设计 Token；修复 `Account Center` 在 `<= 1060px` 视口下导航栏消失断层、多字段编辑弹窗 `100dvh` 内部滚动、移动端日期输入 `16px` 防 iOS 自动缩放、`320px` 窄屏 6 位验证码自适应间距与刘海屏安全区留白；修复 `TextLink` 仅在原生 WebView 劫持 `IframeModal` 并补齐 `noopener noreferrer`、`Consent` 空字符串条款链接判断、`useErrorHandler` `401` 重认证优先级以及备用码重新生成重试与 Passkey 预拉取异常恢复。
+
+---
+
+## 七、标准 OAuth 2.0 / OIDC PKCE (`S256`) 支持与第三方登录联调复审台账
+
+针对标准 OAuth 2.0 / OIDC 第三方连接器（含 `shushu.fan` 真实联调验证）及关联 CLI / 前端模块完成全量 TDD 审查与加固：
+
+1. **标准 OAuth 2.0 与 OIDC 连接器协议安全加固（`@logto/connector-oauth`, `@logto/connector-oidc`）**：
+   - **端到端 PKCE (`S256`) 一致性**：在 `@logto/connector-oauth` 与 `@logto/connector-oidc` 同步支持 `enablePkce`（`generateCodeVerifier` + `generateCodeChallenge` `S256`、`setSession({ codeVerifier })` 及 Token 交换 `code_verifier` 校验），消除 `oidcConnectorConfigGuard` 继承后静默忽略 `enablePkce` 的安全隐患。
+   - **HTTP/HTTPS Endpoint 协议守卫与 URL 合并**：新增 `httpUrlGuard` 校验 `authorizationEndpoint`、`tokenEndpoint`、`userInfoEndpoint` 与 `jwksUri`（阻断 `javascript:` 重定向 XSS 及非法 URL `500` 异常）；`constructAuthorizationUri` 改用 `new URL()` + `searchParams.set()` 安全合并已有查询参数。
+   - **保留协议参数防污染与刷新令牌默认值修复**：新增 `sanitizeCustomAuthParameters` / `sanitizeCustomTokenParameters` 剥离 `customConfig` 中与 OAuth/OIDC/PKCE 冲突的保留键，并在 `ClientSecretBasic` / `ClientSecretJwt` 模式下剔除 `snake_case` `client_secret` 防止多认证凭据泄漏；`getAccessTokenByRefreshToken` 补齐 `configGuard.parse(config)` 确保缺省 `tokenEndpointAuthMethod` 正确回退；`token_type` 支持缺省/空值回退为 RFC 6750 `Bearer` 并拦截头部控制字符。
+2. **CLI Windows 连接器挂载修复（`@logto/cli`）**：
+   - `logto connector link` 在 Windows 下使用 `fs.symlink(path.resolve(packagePath), targetPath, 'junction')` 创建无管理员权限依赖的 NTFS Junction，并修复传入相对路径 `-p ./subpath` 时重复拼接目录段的问题（附 `link.test.ts` 单测）。
+3. **前端外部回调会话保护、Console 表单状态与移动端 UI/UX（`@logto/experience`, `@logto/console`）**：
+   - **外部 IdP 回调隔离**：`handleSearchParametersData` 在 `/callback/*` 外部回跳路由立即早退，防止上游第三方平台附带的 `app_id` / `organization_id` / `ui_locales` 污染 `sessionStorage` 导致会话校验失败。
+   - **社交登录防连点竞态与布局优化**：`SocialSignInList` 与 `SocialLinkButton` 在跳转加载期间禁用重复点击（防止并发覆盖服务端 `codeVerifier` 与前端 `state`），修正加载态样式类名与无图标文本居中偏移。
+   - **Console RHF 开关初始值与响应式布局**：`initFormData` 对缺省的 `Switch` 配置项初始化为布尔默认值（修复因 `removeFalsyValues` 剔除 `false` 导致的表单脏状态卡死）；`Switch` 补齐 `var(--color-white)`、`:focus-visible` 键盘焦点环与窄屏防挤压属性；`Connectors/Guide` 增加 `100dvh` 与 `<= 768px` 纵向响应式堆叠。
