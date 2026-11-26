@@ -114,7 +114,7 @@ const getUserInfo =
         id: sub,
         name: conditional(name),
         rawData,
-        image: conditional(picture),
+        avatar: conditional(picture),
         email: conditional(email_verified && email),
       };
     } catch (error: unknown) {

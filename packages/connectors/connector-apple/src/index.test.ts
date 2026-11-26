@@ -193,4 +193,15 @@ describe('getUserInfo', () => {
       new ConnectorError(ConnectorErrorCodes.SocialIdTokenInvalid)
     );
   });
+
+  it('should throw if session stores a nonce but id_token omits nonce', async () => {
+    jwtVerify.mockImplementationOnce(() => ({
+      payload: { sub: 'userId' },
+    }));
+    const connector = await createConnector({ getConfig });
+    const getSession = vi.fn().mockResolvedValueOnce({ nonce: 'expected-nonce' });
+    await expect(connector.getUserInfo({ id_token: 'id_token' }, getSession)).rejects.toStrictEqual(
+      new ConnectorError(ConnectorErrorCodes.SocialIdTokenInvalid)
+    );
+  });
 });

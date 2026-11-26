@@ -100,7 +100,7 @@ describe('getUserInfo', () => {
       id: '1',
       name: 'monalisa',
       email: 'monalisa@example.com',
-      picture: 'https://example.com/picture.jpg',
+      avatar: 'https://example.com/picture.jpg',
       rawData: {
         sub: '1',
         name: 'monalisa',

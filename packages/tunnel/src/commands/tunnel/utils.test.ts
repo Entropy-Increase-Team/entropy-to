@@ -6,15 +6,29 @@ import path from 'node:path';
 
 import { afterAll, beforeAll, expect, describe, it } from 'vitest';
 
-import { createStaticFileProxy, getMimeType, getSafeStaticFilePath } from './utils.js';
+import {
+  createStaticFileProxy,
+  getMimeType,
+  getSafeStaticFilePath,
+  isLogtoRequestPath,
+} from './utils.js';
 
 describe('Tunnel utils', () => {
   it('should be able to get mime type according to request path', () => {
     expect(getMimeType('/scripts.js')).toEqual('text/javascript');
-    expect(getMimeType('/image.png')).toEqual('image/png');
+    expect(getMimeType('/scripts.js?v=123')).toEqual('text/javascript');
+    expect(getMimeType('/image.png?hash=abc')).toEqual('image/png');
     expect(getMimeType('/style.css')).toEqual('text/css');
     expect(getMimeType('/index.html')).toEqual('text/html');
     expect(getMimeType('/')).toEqual('text/html; charset=utf-8');
+  });
+
+  it('should detect Logto request paths including query strings on /consent', () => {
+    expect(isLogtoRequestPath('/oidc/auth?client_id=foo')).toBe(true);
+    expect(isLogtoRequestPath('/api/interaction')).toBe(true);
+    expect(isLogtoRequestPath('/consent')).toBe(true);
+    expect(isLogtoRequestPath('/consent?app_id=foo')).toBe(true);
+    expect(isLogtoRequestPath('/sign-in')).toBe(false);
   });
 
   describe('getSafeStaticFilePath()', () => {
@@ -34,6 +48,8 @@ describe('Tunnel utils', () => {
     let temporaryRoot: string;
     // eslint-disable-next-line @silverhand/fp/no-let -- assigned once the temp directory is created
     let staticPath: string;
+    // eslint-disable-next-line @silverhand/fp/no-let -- assigned in beforeAll based on OS symlink permission
+    let canCreateSymlinks = true;
 
     beforeAll(async () => {
       // Resolve the real path since the OS temp directory may itself be a symlink (e.g. on macOS)
@@ -51,19 +67,32 @@ describe('Tunnel utils', () => {
         fs.writeFile(path.join(temporaryRoot, 'secret.txt'), 'secret'),
         fs.writeFile(path.join(temporaryRoot, 'outside/secret.txt'), 'secret'),
       ]);
-      await Promise.all([
-        fs.symlink(path.join(staticPath, 'assets/app.js'), path.join(staticPath, 'linked-app.js')),
-        fs.symlink(
-          path.join(temporaryRoot, 'secret.txt'),
-          path.join(staticPath, 'linked-secret.txt')
-        ),
-        fs.symlink(
-          path.join(temporaryRoot, 'outside'),
-          path.join(staticPath, 'linked-outside'),
-          'dir'
-        ),
-        fs.symlink(staticPath, path.join(temporaryRoot, 'static-link'), 'dir'),
-      ]);
+      try {
+        await Promise.all([
+          fs.symlink(
+            path.join(staticPath, 'assets/app.js'),
+            path.join(staticPath, 'linked-app.js')
+          ),
+          fs.symlink(
+            path.join(temporaryRoot, 'secret.txt'),
+            path.join(staticPath, 'linked-secret.txt')
+          ),
+          fs.symlink(
+            path.join(temporaryRoot, 'outside'),
+            path.join(staticPath, 'linked-outside'),
+            'dir'
+          ),
+          fs.symlink(staticPath, path.join(temporaryRoot, 'static-link'), 'dir'),
+        ]);
+      } catch (error: unknown) {
+        // Non-elevated Windows without Developer Mode rejects `fs.symlink` with EPERM.
+        if (error instanceof Error && 'code' in error && error.code === 'EPERM') {
+          // eslint-disable-next-line @silverhand/fp/no-mutation -- test setup capability flag
+          canCreateSymlinks = false;
+          return;
+        }
+        throw error;
+      }
     });
 
     afterAll(async () => {
@@ -79,13 +108,19 @@ describe('Tunnel utils', () => {
       );
     });
 
-    it('should resolve symlinks that point within the static root', async () => {
+    it('should resolve symlinks that point within the static root', async (context) => {
+      if (!canCreateSymlinks) {
+        context.skip();
+      }
       await expect(getSafeStaticFilePath(staticPath, '/linked-app.js')).resolves.toEqual(
         path.join(staticPath, 'assets/app.js')
       );
     });
 
-    it('should support a static root that is a symlink', async () => {
+    it('should support a static root that is a symlink', async (context) => {
+      if (!canCreateSymlinks) {
+        context.skip();
+      }
       await expect(
         getSafeStaticFilePath(path.join(temporaryRoot, 'static-link'), '/scripts.js')
       ).resolves.toEqual(path.join(staticPath, 'scripts.js'));
@@ -99,7 +134,10 @@ describe('Tunnel utils', () => {
       await expect(getSafeStaticFilePath(staticPath, '/../.ssh/id_rsa/.')).resolves.toBeUndefined();
     });
 
-    it('should reject symlinks that point outside the static root', async () => {
+    it('should reject symlinks that point outside the static root', async (context) => {
+      if (!canCreateSymlinks) {
+        context.skip();
+      }
       await expect(
         getSafeStaticFilePath(staticPath, '/linked-secret.txt')
       ).resolves.toBeUndefined();
@@ -197,6 +235,14 @@ describe('Tunnel utils', () => {
 
     it('should respond 416 if the range start is greater than its end', async () => {
       await expect(requestRange('bytes=5-2')).resolves.toHaveProperty('status', 416);
+    });
+
+    it('should respond 405 for unsupported HTTP methods and set valid cache-control', async () => {
+      const postResponse = await fetch(fileUrl, { method: 'POST' });
+      expect(postResponse.status).toBe(405);
+
+      const getResponse = await fetch(fileUrl);
+      expect(getResponse.headers.get('cache-control')).toBe('max-age=604800');
     });
   });
 });

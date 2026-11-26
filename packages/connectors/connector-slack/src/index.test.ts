@@ -96,7 +96,7 @@ describe('getUserInfo', () => {
     expect(socialUserInfo).toStrictEqual({
       id: '1234567890',
       name: 'John Doe',
-      image: 'https://example.com/jphodoe.jpg',
+      avatar: 'https://example.com/jphodoe.jpg',
       email: undefined,
       rawData: {
         sub: '1234567890',

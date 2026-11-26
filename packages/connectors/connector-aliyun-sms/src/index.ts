@@ -55,8 +55,13 @@ const sendMessage =
     );
 
     // Aliyun SMS verification API only accepts [a-zA-Z0-9] values in the payload.
-    // We need to filter out the locale key from the payload as it may contain special characters e.g. zh-CN.
-    const { locale, ...filteredPayload } = payload;
+    // Filter out locale/uiLocales and nested context objects (e.g. user, application).
+    const { locale, uiLocales, ...restPayload } = payload;
+    const filteredPayload = Object.fromEntries(
+      Object.entries(restPayload).filter(
+        ([, value]) => typeof value === 'string' || typeof value === 'number'
+      )
+    );
 
     try {
       const httpResponse = await sendSms(

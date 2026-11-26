@@ -320,4 +320,32 @@ describe('Maligun connector', () => {
       payload: { code: '123456', application: { name: 'Foo' } },
     });
   });
+
+  it('should reject untrusted Mailgun endpoints or path-traversal domains', async () => {
+    for (const invalidConfig of [
+      { endpoint: 'https://evil.example.com/#.mailgun.net' },
+      { endpoint: 'http://api.mailgun.net' },
+      { domain: '../evil' },
+    ]) {
+      getConfig.mockResolvedValue({
+        ...baseConfig,
+        ...invalidConfig,
+        deliveries: {
+          [TemplateType.Generic]: {
+            subject: 'Verification code is {{code}}',
+            html: '<p>{{code}}</p>',
+          },
+        },
+      });
+
+      // eslint-disable-next-line no-await-in-loop -- sequential assertions sharing mocked getConfig
+      await expect(
+        connector.sendMessage({
+          to: 'bar@example.com',
+          type: TemplateType.Generic,
+          payload: { code: '123456' },
+        })
+      ).rejects.toThrowError('Invalid Mailgun endpoint or domain.');
+    }
+  });
 });

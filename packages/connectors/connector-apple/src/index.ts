@@ -26,6 +26,31 @@ const generateNonce = () => generateStandardId();
 // See https://developer.apple.com/documentation/signinwithapplejs/authorizationi/id_token
 const isEmailVerified = (value: unknown) => value === true || value === 'true';
 
+const validateSessionNonce = (session: unknown, payloadNonce: unknown) => {
+  const validationNonce =
+    typeof session === 'object' && session !== null && 'nonce' in session
+      ? session.nonce
+      : undefined;
+
+  if (!validationNonce && !payloadNonce) {
+    return;
+  }
+
+  assert(
+    typeof validationNonce === 'string' && validationNonce.length > 0,
+    new ConnectorError(ConnectorErrorCodes.General, {
+      message: "'nonce' not presented in session storage.",
+    })
+  );
+
+  assert(
+    validationNonce === payloadNonce,
+    new ConnectorError(ConnectorErrorCodes.SocialIdTokenInvalid, {
+      message: "IdToken validation failed due to 'nonce' mismatch.",
+    })
+  );
+};
+
 const getAuthorizationUri =
   (getConfig: GetConnectorConfig): GetAuthorizationUri =>
   async ({ state, redirectUri, scope }, setSession) => {
@@ -77,30 +102,7 @@ const getUserInfo =
         audience: clientId,
       });
 
-      if (payload.nonce) {
-        // TODO @darcy: need to specify error code
-        assert(
-          getSession,
-          new ConnectorError(ConnectorErrorCodes.NotImplemented, {
-            message: "'getSession' is not implemented.",
-          })
-        );
-        const { nonce: validationNonce } = await getSession();
-
-        assert(
-          validationNonce,
-          new ConnectorError(ConnectorErrorCodes.General, {
-            message: "'nonce' not presented in session storage.",
-          })
-        );
-
-        assert(
-          validationNonce === payload.nonce,
-          new ConnectorError(ConnectorErrorCodes.SocialIdTokenInvalid, {
-            message: "IdToken validation failed due to 'nonce' mismatch.",
-          })
-        );
-      }
+      validateSessionNonce(await getSession(), payload.nonce);
 
       if (!payload.sub) {
         throw new ConnectorError(ConnectorErrorCodes.SocialIdTokenInvalid);

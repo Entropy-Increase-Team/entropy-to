@@ -11,6 +11,7 @@ import {
   ConnectorError,
   ConnectorErrorCodes,
   ConnectorType,
+  getConfigTemplateByType,
   validateConfig,
 } from '@logto/connector-kit';
 
@@ -34,8 +35,8 @@ function sendMessage(getConfig: GetConnectorConfig): SendMessageFunction {
     const { to, type, payload } = data;
     const config = inputConfig ?? (await getConfig(defaultMetadata.id));
     validateConfig(config, SmsConfigGuard);
-    const { accessKeyId, accessKeySecret, signName, templates, sdkAppId, region } = config;
-    const template = templates.find(({ usageType }) => usageType === type);
+    const { accessKeyId, accessKeySecret, signName, sdkAppId, region } = config;
+    const template = getConfigTemplateByType(type, config);
 
     assert(
       template,
@@ -45,11 +46,15 @@ function sendMessage(getConfig: GetConnectorConfig): SendMessageFunction {
       )
     );
 
-    // Filter out locale from payload
-    const { locale, ...filteredPayload } = payload;
+    // Filter out locale/uiLocales and non-primitive context objects from payload
+    const { locale, uiLocales, ...filteredPayload } = payload;
 
-    // Tencent SMS API requires all parameters to be strings. Force parse all payload values to string.
-    const parametersSet = Object.values(filteredPayload).map(String);
+    // Tencent SMS API requires all parameters to be strings. Keep only primitive template params.
+    const parametersSet = Object.values(filteredPayload)
+      .filter(
+        (value): value is string | number => typeof value === 'string' || typeof value === 'number'
+      )
+      .map(String);
 
     try {
       const httpResponse = await sendSmsRequest(template.templateCode, parametersSet, to, {

@@ -1,5 +1,7 @@
 import nock from 'nock';
 
+import { ConnectorError, ConnectorErrorCodes } from '@logto/connector-kit';
+
 import { mockConfig } from './mock.js';
 
 const getConfig = vi.fn().mockResolvedValue(mockConfig);
@@ -92,5 +94,30 @@ describe('getUserInfo', () => {
       })
     );
     expect(userInfo).toMatchObject({ id: userId, rawData: { sub: userId, nonce: 'nonce' } });
+  });
+
+  it('should throw SocialIdTokenInvalid when session expects a nonce but id_token omits it', async () => {
+    jwtVerify.mockImplementationOnce(() => ({
+      payload: { sub: 'userId' },
+    }));
+    const tokenEndpointUrl = new URL(mockConfig.tokenEndpoint);
+    nock(tokenEndpointUrl.origin).post(tokenEndpointUrl.pathname).query(true).reply(200, {
+      id_token: 'id_token',
+      access_token: 'access_token',
+    });
+    const connector = await createConnector({ getConfig });
+    await expect(
+      connector.getUserInfo(
+        { code: 'code' },
+        vi.fn().mockResolvedValueOnce({
+          nonce: 'expected_nonce',
+          redirectUri: 'http://localhost:3001/callback',
+        })
+      )
+    ).rejects.toStrictEqual(
+      new ConnectorError(ConnectorErrorCodes.SocialIdTokenInvalid, {
+        message: 'ID Token validation failed due to `nonce` mismatch.',
+      })
+    );
   });
 });

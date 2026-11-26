@@ -115,7 +115,7 @@ const getUserInfo =
         id: sub,
         name: conditional(name),
         email: conditional(email_verified && email),
-        picture: conditional(picture),
+        avatar: conditional(picture),
         rawData: jsonGuard.parse(userInfo),
       };
     } catch (error: unknown) {

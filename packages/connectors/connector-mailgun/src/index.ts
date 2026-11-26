@@ -67,6 +67,19 @@ const getDataFromCustomTemplate = (
   };
 };
 
+const assertValidMailgunTarget = (endpoint: string | undefined, domain: string) => {
+  const endpointUrl = trySafe(() => new URL(endpoint ?? 'https://api.mailgun.net'));
+  const isTrustedHost =
+    endpointUrl?.protocol === 'https:' &&
+    (endpointUrl.hostname === 'api.mailgun.net' || endpointUrl.hostname.endsWith('.mailgun.net'));
+  const isSafeDomain = /^[\d.a-z-]+$/i.test(domain) && !domain.includes('..');
+
+  assert(
+    isTrustedHost && isSafeDomain,
+    new ConnectorError(ConnectorErrorCodes.InvalidConfig, 'Invalid Mailgun endpoint or domain.')
+  );
+};
+
 const sendMessage = (
   getConfig: GetConnectorConfig,
   getI18nEmailTemplate?: GetI18nEmailTemplate
@@ -76,6 +89,7 @@ const sendMessage = (
     validateConfig(config, mailgunConfigGuard);
 
     const { endpoint, domain, apiKey, from, deliveries } = config;
+    assertValidMailgunTarget(endpoint, domain);
 
     const customTemplate = await trySafe(async () => getI18nEmailTemplate?.(type, payload.locale));
     const template = deliveries[type] ?? deliveries[TemplateType.Generic];

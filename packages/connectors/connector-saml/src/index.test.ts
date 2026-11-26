@@ -61,6 +61,33 @@ describe('validateSamlAssertion', () => {
     expect(redirectUri).toEqual('http://localhost:3000/callback?state=some_state');
     vi.useRealTimers();
   });
+
+  it('Should reject assertion when audience does not match configured SP entityID', async () => {
+    vi.useFakeTimers().setSystemTime(new Date('2023-01-18T14:55:45.406Z'));
+    getSession.mockResolvedValue({
+      connectorFactoryId: 'saml',
+      state: 'some_state',
+      redirectUri: 'http://localhost:3000/callback',
+    });
+    const wrongEntityIdGetConfig = vi.fn().mockResolvedValue({
+      ...mockedConfig,
+      entityID: 'urn:another-sp.example.com',
+    });
+
+    await expect(
+      validateSamlAssertion(wrongEntityIdGetConfig)(
+        {
+          body: {
+            SAMLResponse: mockSamlResponse,
+            RelayState: 'jti',
+          },
+        },
+        getSession,
+        setSession
+      )
+    ).rejects.toThrowError('SAML assertion audience does not match the SP entity ID.');
+    vi.useRealTimers();
+  });
 });
 
 describe('getUserInfo', () => {

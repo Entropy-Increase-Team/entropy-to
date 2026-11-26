@@ -107,8 +107,9 @@ const getUserInfo =
       }
 
       const { id, kakao_account } = result.data;
-      const { is_email_valid, email, profile } = kakao_account ?? {
+      const { is_email_valid, is_email_verified, email, profile } = kakao_account ?? {
         is_email_valid: null,
+        is_email_verified: null,
         profile: null,
         email: null,
       };
@@ -116,7 +117,7 @@ const getUserInfo =
       return {
         id: id.toString(),
         avatar: conditional(profile && !profile.is_default_image && profile.profile_image_url),
-        email: conditional(is_email_valid && email),
+        email: conditional(is_email_valid && is_email_verified && email),
         name: conditional(profile?.nickname),
         rawData,
       };

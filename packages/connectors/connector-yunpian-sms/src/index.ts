@@ -112,8 +112,9 @@ const sendMessage =
         }
       }
 
-      console.warn('connector-yunpian-sms: send unknown error', error);
-      throw new ConnectorError(ConnectorErrorCodes.General, `Unknown error: ${String(error)}`);
+      const safeErrorMessage = error instanceof Error ? error.message : String(error);
+      console.warn('connector-yunpian-sms: send unknown error', safeErrorMessage);
+      throw new ConnectorError(ConnectorErrorCodes.General, `Unknown error: ${safeErrorMessage}`);
     }
   };
 

@@ -46,7 +46,12 @@ describe('sendMessage()', () => {
     await connector.sendMessage({
       to: phoneTest,
       type: TemplateType.SignIn,
-      payload: { code: codeTest, locale: 'zh-CN' },
+      payload: {
+        code: codeTest,
+        locale: 'zh-CN',
+        uiLocales: 'zh-CN en',
+        user: { primaryPhone: phoneTest },
+      },
     });
     expect(sendSmsRequest).toHaveBeenCalledWith(
       mockedTemplateCode,
