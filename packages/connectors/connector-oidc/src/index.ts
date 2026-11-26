@@ -21,7 +21,7 @@ import { generateStandardId } from '@logto/shared/universal';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { HTTPError } from 'ky';
 
-import { defaultMetadata } from './constant.js';
+import { defaultMetadata, defaultTimeout } from './constant.js';
 import {
   idTokenProfileStandardClaimsGuard,
   idTokenClaimsGuardWithStringBooleans,
@@ -63,14 +63,14 @@ const getAuthorizationUri =
     } = parsedConfig;
 
     return constructAuthorizationUri(authorizationEndpoint, {
+      ...authRequestOptionalConfig,
+      ...customConfig,
       responseType,
       clientId,
       scope: customScope ?? scope,
       redirectUri,
       state,
       nonce,
-      ...authRequestOptionalConfig,
-      ...customConfig,
     });
   };
 
@@ -90,7 +90,9 @@ const parseUserInfoFromIdToken = async (
   try {
     const { payload } = await jwtVerify(
       idToken,
-      createRemoteJWKSet(new URL(config.idTokenVerificationConfig.jwksUri)),
+      createRemoteJWKSet(new URL(config.idTokenVerificationConfig.jwksUri), {
+        timeoutDuration: defaultTimeout,
+      }),
       {
         ...config.idTokenVerificationConfig,
         audience: config.clientId,

@@ -79,10 +79,20 @@ export const getSafeStaticFilePath = async (staticPath: string, requestUrl: stri
     return;
   }
 
+  const fileStat = await trySafe(fs.stat(realPath));
+  if (!fileStat?.isFile()) {
+    return;
+  }
+
   return realPath;
 };
 
-const readFile = async (requestPath: string, start?: number, end?: number) => {
+const readFile = async (
+  requestPath: string,
+  start?: number,
+  end?: number,
+  skipBodyRead = false
+) => {
   const fileHandle = await fs.open(requestPath, 'r');
   try {
     const { size } = await fileHandle.stat();
@@ -94,9 +104,14 @@ const readFile = async (requestPath: string, start?: number, end?: number) => {
       throw new Error('Range not satisfiable.');
     }
 
-    const buffer = Buffer.alloc(readEnd - readStart + 1);
+    const contentLength = readEnd - readStart + 1;
+    if (skipBodyRead) {
+      return { buffer: Buffer.alloc(0), contentLength, totalFileSize: size, readStart, readEnd };
+    }
+
+    const buffer = Buffer.alloc(contentLength);
     await fileHandle.read(buffer, 0, buffer.length, readStart);
-    return { buffer, totalFileSize: size, readStart, readEnd };
+    return { buffer, contentLength, totalFileSize: size, readStart, readEnd };
   } finally {
     await fileHandle.close();
   }
@@ -136,11 +151,12 @@ export const createStaticFileProxy =
     }
 
     if (!isStaticFileProxyMethod(request.method)) {
-      response.writeHead(405).end();
+      response.writeHead(405, { Allow: 'GET, HEAD' }).end();
       return;
     }
 
-    const fallBackToIndex = !isFileAssetPath(request.url);
+    const [pathname = ''] = request.url.split(/[#?]/);
+    const fallBackToIndex = !isFileAssetPath(pathname);
     const requestPath = await getStaticFileRequestPath(staticPath, request.url, fallBackToIndex);
     const { range = '' } = request.headers;
 
@@ -151,13 +167,23 @@ export const createStaticFileProxy =
 
     try {
       const { start, end } = parseRange(range);
-      const { buffer, totalFileSize, readStart, readEnd } = await readFile(requestPath, start, end);
+      const isHeadRequest = request.method === 'HEAD';
+      const { buffer, contentLength, totalFileSize, readStart, readEnd } = await readFile(
+        requestPath,
+        start,
+        end,
+        isHeadRequest
+      );
       response.setHeader('cache-control', fallBackToIndex ? noCache : maxAgeSevenDays);
       response.setHeader('content-type', getMimeType(request.url));
       setRangeHeaders(response, range, { readStart, readEnd, totalFileSize });
 
-      response.setHeader('content-length', String(buffer.length));
+      response.setHeader('content-length', String(contentLength));
       response.writeHead(range ? 206 : 200);
+      if (isHeadRequest) {
+        response.end();
+        return;
+      }
       response.end(buffer);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -198,11 +224,15 @@ export const createLogtoResponseHandler = async ({
   void responseInterceptor(async (responseBuffer, proxyResponse) => {
     const responseBody = responseBuffer.toString();
     if (verbose) {
-      consoleLog.info(`[${proxyResponse.statusCode}] ${chalk.cyan(responseBody)}`);
+      const redactedBody = responseBody.replaceAll(
+        /"(access_token|refresh_token|id_token)"\s*:\s*"[^"]*"/g,
+        '"$1":"[REDACTED]"'
+      );
+      consoleLog.info(`[${proxyResponse.statusCode}] ${chalk.cyan(redactedBody)}`);
     }
 
     if (proxyResponse.headers['content-type']?.includes('text/html')) {
-      return responseBody.replace(
+      return responseBody.replaceAll(
         `action="${logtoEndpointUrl.href}`,
         `action="${tunnelServiceUrl.href}`
       );
@@ -262,10 +292,10 @@ export const isLogtoRequestPath = (requestPath?: string): boolean => {
 };
 
 export const getMimeType = (requestPath: string) => {
-  const fallBackToIndex = !isFileAssetPath(requestPath);
+  const [pathname = ''] = requestPath.split(/[#?]/);
+  const fallBackToIndex = !isFileAssetPath(pathname);
   if (fallBackToIndex) {
     return indexContentType;
   }
-  const [pathname = ''] = requestPath.split(/[#?]/);
   return mime.getType(pathname) ?? 'application/octet-stream';
 };

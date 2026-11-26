@@ -88,4 +88,21 @@ describe('useSingleSignOn', () => {
     });
     expect(mockedAbortInteraction).not.toHaveBeenCalled();
   });
+
+  it('clears stale callback link storage before redirecting on web SSO sign-in', async () => {
+    sessionStorage.setItem('social_callback_data:connector-id', 'app://callback');
+    mockedGetSsoAuthorizationUrl.mockResolvedValueOnce({
+      authorizationUri: 'https://idp.example.com/authorize',
+      verificationId: 'ver_1',
+    });
+
+    const { result } = renderHook(() => useSingleSignOn(), { wrapper });
+
+    await act(async () => {
+      await result.current('connector-id');
+    });
+
+    expect(sessionStorage.getItem('social_callback_data:connector-id')).toBeNull();
+    expect(mockRedirectTo).toHaveBeenCalledWith('https://idp.example.com/authorize');
+  });
 });

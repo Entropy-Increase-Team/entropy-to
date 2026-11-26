@@ -242,7 +242,7 @@ const Layout = () => {
         )}
       >
         {isFullPage && <PageHeader />}
-        {showsMobileTabNav && <MobileTabNav items={accountNavItems} />}
+        {showsMultiPageNav && <MobileTabNav items={accountNavItems} />}
         <div
           className={classNames(
             styles.container,

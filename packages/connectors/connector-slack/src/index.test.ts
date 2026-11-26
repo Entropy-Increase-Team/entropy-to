@@ -111,4 +111,40 @@ describe('getUserInfo', () => {
     const connector = await createConnector({ getConfig });
     await expect(connector.getUserInfo({ code: 'code' }, vi.fn())).rejects.toThrow();
   });
+
+  it('decodes base64url JWT payloads and maps missing session or ok:false responses to ConnectorError', async () => {
+    const connector = await createConnector({ getConfig });
+    await expect(
+      connector.getUserInfo({ code: 'code', redirectUri }, vi.fn())
+    ).rejects.toMatchObject({ code: 'general' });
+
+    nock(accessTokenEndpoint).post('').reply(200, {
+      ok: false,
+      error: 'invalid_code',
+    });
+    await expect(
+      connector.getUserInfo({ code: 'code', redirectUri }, getSession)
+    ).rejects.toMatchObject({ code: 'social_auth_code_invalid' });
+
+    const base64UrlPayload = Buffer.from(JSON.stringify({ sub: 'u_1' }), 'utf8').toString(
+      'base64url'
+    );
+    nock(accessTokenEndpoint)
+      .post('')
+      .reply(200, {
+        ok: true,
+        access_token: 'access_token',
+        token_type: 'Bearer',
+        id_token: `eyJhbGciOiJub25lIn0.${base64UrlPayload}.`,
+      });
+    await expect(connector.getUserInfo({ code: 'code', redirectUri }, getSession)).resolves.toEqual(
+      {
+        id: 'u_1',
+        name: undefined,
+        avatar: undefined,
+        email: undefined,
+        rawData: { sub: 'u_1' },
+      }
+    );
+  });
 });

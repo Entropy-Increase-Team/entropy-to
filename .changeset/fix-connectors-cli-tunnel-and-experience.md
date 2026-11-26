@@ -1,6 +1,7 @@
 ---
 "@logto/connector-kakao": patch
 "@logto/connector-apple": patch
+"@logto/connector-azuread": patch
 "@logto/connector-oidc": patch
 "@logto/connector-saml": patch
 "@logto/connector-mailgun": patch
@@ -10,10 +11,8 @@
 "@logto/connector-aliyun-sms-mas": patch
 "@logto/connector-linkedin": patch
 "@logto/connector-slack": patch
-"@logto/tunnel": patch
-"@logto/experience": patch
 ---
 
-harden connector token/email/endpoint validation, SMS parameter filtering, and tunnel static proxy handling
+harden connector authentication, email and header validation, and cross-platform authority URLs
 
-Enforce Kakao email verification, Apple and OIDC session nonce checks, SAML assertion audience and XML validation, Mailgun endpoint/domain validation, Yunpian SMS error log redaction, LinkedIn and Slack avatar field mapping, SMS connector primitive parameter filtering and generic template fallback, CLI connector installation safety, Tunnel JSON array/MIME/405/token redaction fixes, and Experience web social callback link cleanup.
+Enforce verified email checks on Kakao, preserve session errors and native nonces on Apple, fix Windows authority URL construction on Azure AD, tighten OIDC nonce/timeout/customConfig handling, validate SAML metadata XML and assertion audiences, harden Mailgun domain/endpoint/header sanitization, redact and safely parse Yunpian SMS error responses, stabilize positional SMS template parameters on Tencent and Aliyun SMS connectors, and map avatar fields cleanly on LinkedIn and Slack.

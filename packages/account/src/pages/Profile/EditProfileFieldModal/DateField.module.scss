@@ -93,3 +93,10 @@
 .errorMessage {
   color: var(--color-danger-default);
 }
+
+:global(body.mobile) {
+  .part input,
+  .separator {
+    font: var(--font-body-1);
+  }
+}

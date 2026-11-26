@@ -352,8 +352,14 @@ export const getExtraTokenClaimsForJwtCustomization = async (
      * dropped before merging (the log entry above keeps the raw script result). Client credentials
      * tokens carry no authentication context, so their custom claims stay untouched.
      */
-    // OIDC step-up authentication context is reserved against the customizer on user tokens.
-    return isClientCredentialsToken ? result : dropReservedAuthenticationContextClaims(result);
+    // OIDC step-up authentication context (`acr`, `amr`, `auth_time`) is reserved on user tokens,
+    // while `organization_id` and `act` are reserved against customizer spoofing on all tokens.
+    return isClientCredentialsToken
+      ? result &&
+          Object.fromEntries(
+            Object.entries(result).filter(([key]) => key !== 'organization_id' && key !== 'act')
+          )
+      : dropReservedAuthenticationContextClaims(result);
   } catch (error: unknown) {
     void appInsights.trackException(error, buildAppInsightsTelemetry(ctx));
 

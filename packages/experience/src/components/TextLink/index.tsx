@@ -8,8 +8,8 @@ import { Link } from 'react-router-dom';
 
 import { useIframeModal } from '@/Providers/IframeModalProvider';
 import { usePreserveSearchParams } from '@/hooks/use-navigate-with-preserved-search-params';
-import usePlatform from '@/hooks/use-platform';
 import DynamicT from '@/shared/components/DynamicT';
+import { isNativeWebview } from '@/utils/native-sdk';
 
 import styles from './index.module.scss';
 
@@ -24,7 +24,6 @@ export type Props = AnchorHTMLAttributes<HTMLAnchorElement> & {
 const TextLink = ({ className, children, text, icon, type = 'primary', to, ...rest }: Props) => {
   const { t } = useTranslation();
   const { getTo } = usePreserveSearchParams();
-  const { isMobile } = usePlatform();
   const { setModalState } = useIframeModal();
 
   // By default the behavior of opening a new window is not supported in WkWebView, or in android webview.
@@ -41,7 +40,7 @@ const TextLink = ({ className, children, text, icon, type = 'primary', to, ...re
       href,
       target,
       onClick: (event: React.MouseEvent<HTMLAnchorElement>) => {
-        if (isMobile) {
+        if (isNativeWebview()) {
           const title = text && t(text);
           event.preventDefault();
           setModalState({ href, title: typeof title === 'string' ? title : undefined });
@@ -51,7 +50,7 @@ const TextLink = ({ className, children, text, icon, type = 'primary', to, ...re
       },
       ...others,
     };
-  }, [isMobile, rest, setModalState, t, text]);
+  }, [rest, setModalState, t, text]);
 
   if (to) {
     return (
@@ -66,7 +65,7 @@ const TextLink = ({ className, children, text, icon, type = 'primary', to, ...re
     <a
       className={classNames(styles.link, styles[type], className)}
       {...hyperLinkProps}
-      rel="noopener"
+      rel={rest.target === '_blank' ? 'noopener noreferrer' : 'noopener'}
     >
       {icon}
       {children ?? <DynamicT forKey={text} />}

@@ -17,6 +17,7 @@ import {
   validateConfig,
   TemplateType,
   replaceSendMessageHandlebars,
+  stripHeaderControlChars,
 } from '@logto/connector-kit';
 
 import { defaultMetadata } from './constant.js';
@@ -30,8 +31,8 @@ const getDataFromDeliveryConfig = (
   payload: SendMessagePayload
 ): Record<string, string | undefined> => {
   const commonData = {
-    subject: subject && replaceSendMessageHandlebars(subject, payload),
-    'h:Reply-To': replyTo,
+    subject: subject && stripHeaderControlChars(replaceSendMessageHandlebars(subject, payload)),
+    'h:Reply-To': replyTo && stripHeaderControlChars(replyTo),
   };
 
   if ('template' in rest) {
@@ -54,8 +55,9 @@ const getDataFromCustomTemplate = (
   payload: SendMessagePayload
 ): Record<string, string | undefined> => {
   return {
-    subject: replaceSendMessageHandlebars(subject, payload),
-    'h:Reply-To': replyTo && replaceSendMessageHandlebars(replyTo, payload),
+    subject: stripHeaderControlChars(replaceSendMessageHandlebars(subject, payload)),
+    'h:Reply-To':
+      replyTo && stripHeaderControlChars(replaceSendMessageHandlebars(replyTo, payload)),
     // Since html can render plain text, we always send the content as html
     html: conditional(replaceSendMessageHandlebars(content, payload)),
     // If contentType is text/plain, we will use text instead of html
@@ -63,21 +65,17 @@ const getDataFromCustomTemplate = (
       contentType === 'text/plain' && replaceSendMessageHandlebars(content, payload)
     ),
     // If provided this value will override the from value in the config
-    from: sendFrom && replaceSendMessageHandlebars(sendFrom, payload),
+    from: sendFrom && stripHeaderControlChars(replaceSendMessageHandlebars(sendFrom, payload)),
   };
 };
 
-const assertValidMailgunTarget = (endpoint: string | undefined, domain: string) => {
+const resolveMailgunMessagesUrl = (endpoint: string | undefined, domain: string) => {
   const endpointUrl = trySafe(() => new URL(endpoint ?? 'https://api.mailgun.net'));
-  const isTrustedHost =
-    endpointUrl?.protocol === 'https:' &&
-    (endpointUrl.hostname === 'api.mailgun.net' || endpointUrl.hostname.endsWith('.mailgun.net'));
-  const isSafeDomain = /^[\d.a-z-]+$/i.test(domain) && !domain.includes('..');
-
   assert(
-    isTrustedHost && isSafeDomain,
+    endpointUrl,
     new ConnectorError(ConnectorErrorCodes.InvalidConfig, 'Invalid Mailgun endpoint or domain.')
   );
+  return `${endpointUrl.origin}/v3/${domain}/messages`;
 };
 
 const sendMessage = (
@@ -89,7 +87,7 @@ const sendMessage = (
     validateConfig(config, mailgunConfigGuard);
 
     const { endpoint, domain, apiKey, from, deliveries } = config;
-    assertValidMailgunTarget(endpoint, domain);
+    const messagesUrl = resolveMailgunMessagesUrl(endpoint, domain);
 
     const customTemplate = await trySafe(async () => getI18nEmailTemplate?.(type, payload.locale));
     const template = deliveries[type] ?? deliveries[TemplateType.Generic];
@@ -102,18 +100,16 @@ const sendMessage = (
     assert(data, new ConnectorError(ConnectorErrorCodes.TemplateNotFound));
 
     try {
-      return await got.post(
-        new URL(`/v3/${domain}/messages`, endpoint ?? 'https://api.mailgun.net').toString(),
-        {
-          username: 'api',
-          password: apiKey,
-          form: {
-            from,
-            to,
-            ...removeUndefinedKeys(data),
-          },
-        }
-      );
+      return await got.post(messagesUrl, {
+        username: 'api',
+        password: apiKey,
+        timeout: { request: 5000 },
+        form: {
+          from: stripHeaderControlChars(from),
+          to,
+          ...removeUndefinedKeys(data),
+        },
+      });
     } catch (error) {
       if (error instanceof HTTPError) {
         const {

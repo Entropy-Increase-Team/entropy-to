@@ -64,7 +64,7 @@ export const handleSearchParametersData = () => {
         // Keep app_id in the URL for resuming sessions
         parameters.delete(key);
       }
-    } else if (key !== searchKeys.appId) {
+    } else if (key !== searchKeys.appId && !isRedirectCallback) {
       sessionStorage.removeItem(key);
     }
   }

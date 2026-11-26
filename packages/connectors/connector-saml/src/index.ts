@@ -15,6 +15,7 @@ import {
   validateConfig,
   ConnectorType,
 } from '@logto/connector-kit';
+import { XMLValidator } from 'fast-xml-parser';
 import * as saml from 'samlify';
 
 import { defaultMetadata } from './constant.js';
@@ -63,6 +64,13 @@ const getAuthorizationUri =
     await setSession(storage);
 
     try {
+      const metadataValidation = XMLValidator.validate(idpMetadataXml, {
+        allowBooleanAttributes: true,
+      });
+      if (metadataValidation !== true) {
+        throw new Error(metadataValidation.err.msg);
+      }
+
       // eslint-disable-next-line new-cap
       const identityProvider = saml.IdentityProvider({
         wantAuthnRequestsSigned: signAuthnRequest,
@@ -128,8 +136,9 @@ export const validateSamlAssertion =
     );
 
     const queryParameters = new URLSearchParams({ state });
+    const separator = redirectUri.includes('?') ? '&' : '?';
 
-    return `${redirectUri}?${queryParameters.toString()}`;
+    return `${redirectUri}${separator}${queryParameters.toString()}`;
   };
 
 const getUserInfo =

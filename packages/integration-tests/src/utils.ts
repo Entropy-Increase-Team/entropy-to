@@ -78,7 +78,7 @@ export const getAccessTokenPayload = (accessToken: string): Record<string, unkno
 };
 
 export const appendPathname = (pathname: string, baseUrl: URL) =>
-  new URL(path.join(baseUrl.pathname, pathname), baseUrl);
+  new URL(path.posix.join(baseUrl.pathname, pathname), baseUrl);
 
 /**
  * Run an action and simultaneously wait for navigation to complete. This is

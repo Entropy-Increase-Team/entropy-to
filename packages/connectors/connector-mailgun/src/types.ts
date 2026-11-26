@@ -57,9 +57,29 @@ export type MailgunConfig = {
   deliveries: Record<string, DeliveryConfig>;
 };
 
+const isSafeMailgunEndpoint = (endpoint: string) => {
+  try {
+    const url = new URL(endpoint);
+    return (
+      url.protocol === 'https:' &&
+      !url.username &&
+      !url.password &&
+      !url.search &&
+      !url.hash &&
+      (url.pathname === '/' || url.pathname === '/v3' || url.pathname === '/v3/') &&
+      (url.hostname === 'api.mailgun.net' || url.hostname.endsWith('.mailgun.net'))
+    );
+  } catch {
+    return false;
+  }
+};
+
+const isSafeMailgunDomain = (domain: string) =>
+  /^[\da-z](?:[\da-z-]*[\da-z])?(?:\.[\da-z](?:[\da-z-]*[\da-z])?)+$/i.test(domain);
+
 export const mailgunConfigGuard = z.object({
-  endpoint: z.string().url().endsWith('.mailgun.net').optional(),
-  domain: z.string(),
+  endpoint: z.string().refine(isSafeMailgunEndpoint, 'Invalid Mailgun endpoint.').optional(),
+  domain: z.string().refine(isSafeMailgunDomain, 'Invalid Mailgun domain.'),
   apiKey: z.string(),
   from: z.string(),
   deliveries: z.record(templateConfigGuard),

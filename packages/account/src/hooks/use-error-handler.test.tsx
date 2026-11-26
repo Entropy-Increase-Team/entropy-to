@@ -104,4 +104,18 @@ describe('useErrorHandler', () => {
     expect(screen.queryByText('error.invalid_session')).toBeNull();
     expect(mockSignIn).not.toHaveBeenCalled();
   });
+
+  it('still prompts reauthentication for 401 auth.unauthorized when only errorHandlers.global is provided', async () => {
+    const globalHandler = jest.fn();
+    renderTestButton(createHttpError('auth.unauthorized', 401), {
+      global: globalHandler,
+    });
+
+    fireEvent.click(screen.getByText('Trigger error'));
+
+    await waitFor(() => {
+      expect(screen.getByText('error.invalid_session')).not.toBeNull();
+    });
+    expect(globalHandler).not.toHaveBeenCalled();
+  });
 });

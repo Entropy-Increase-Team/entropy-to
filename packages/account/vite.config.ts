@@ -14,6 +14,7 @@ dotenv.config({ path: await findUp('.env', {}) });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const experienceSrcPath = path.resolve(__dirname, '../experience/src');
+const normalizedExperienceSrcPath = experienceSrcPath.replaceAll('\\', '/');
 const accountCenterSrcPath = path.resolve(__dirname, './src');
 
 const experienceAliasPlugin = (): Plugin => ({
@@ -22,7 +23,7 @@ const experienceAliasPlugin = (): Plugin => ({
   transform(code, id) {
     const normalizedId = id.replaceAll('\\', '/');
 
-    if (!normalizedId.startsWith(experienceSrcPath) || !code.includes('@/')) {
+    if (!normalizedId.startsWith(normalizedExperienceSrcPath) || !code.includes('@/')) {
       return null;
     }
 

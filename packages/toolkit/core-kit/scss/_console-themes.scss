@@ -200,13 +200,13 @@
 
   // Background
   --color-bg-body-base: var(--color-neutral-95);
-  --color-bg-body: var(--color-neutral-100);
+  --color-bg-body: var(--color-all-100);
   --color-bg-layer-1: var(--color-all-100);
   --color-bg-layer-2: var(--color-neutral-95);
-  --color-bg-body-overlay: var(--color-neutral-100);
+  --color-bg-body-overlay: var(--color-all-100);
   --color-bg-float-base: var(--color-neutral-variant-90);
-  --color-bg-float: var(--color-neutral-100);
-  --color-bg-float-overlay: var(--color-neutral-100);
+  --color-bg-float: var(--color-all-100);
+  --color-bg-float-overlay: var(--color-all-100);
   --color-bg-mask: rgba(0, 0, 0, 40%); // 4% --color-neutral-0
   --color-bg-toast: var(--color-neutral-20);
   --color-bg-state-unselected: var(--color-neutral-90);
@@ -424,7 +424,7 @@
   --color-specific-toggle-thumb-disabled: #ffffff4d;
 
   // Background
-  --color-bg-body-base: var(--color-neutral-100);
+  --color-bg-body-base: var(--color-all-100);
   --color-bg-body: var(--color-surface);
   --color-bg-body-overlay: var(--color-surface-2);
   --color-bg-layer-1:
@@ -432,10 +432,10 @@
     linear-gradient(0deg, rgba(196, 199, 199, 2%), rgba(196, 199, 199, 2%)),
     #191c1d;
   --color-bg-layer-2: var(--color-surface-4);
-  --color-bg-float-base: var(--color-neutral-100);
+  --color-bg-float-base: var(--color-all-100);
   --color-bg-float: var(--color-surface-3);
   --color-bg-float-overlay: var(--color-surface-4);
-  --color-bg-mask: rgba(0, 0, 0, 60%); // 60% --color-neutral-100;
+  --color-bg-mask: rgba(0, 0, 0, 60%); // 60% --color-all-100;
   --color-bg-toast: var(--color-neutral-80);
   --color-bg-state-unselected: var(--color-neutral-90);
   --color-bg-state-disabled: rgba(247, 248, 248, 8%); // 8% --color-neutral-10
@@ -447,4 +447,6 @@
   --color-code-white: #f7f8f8;
   --color-code-grey: #adaab4;
   --color-code-dark-bg-focused: rgba(255, 255, 255, 24%);
+  --color-code-dark-bg-hover: rgba(255, 255, 255, 12%);
+  --color-code-dark-bg-pressed: rgba(255, 255, 255, 18%);
 }

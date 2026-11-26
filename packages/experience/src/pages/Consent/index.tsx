@@ -166,7 +166,7 @@ const Consent = () => {
   } = consentData;
 
   const { unregisteredClientHost, applicationName } = getClientDisplayData(consentData);
-  const showTerms = Boolean(termsOfUseUrl ?? privacyPolicyUrl);
+  const showTerms = Boolean(termsOfUseUrl) || Boolean(privacyPolicyUrl);
   const { redirectUri } = consentData;
   const redirectUriOrigin = consentData.redirectUri
     ? getRedirectUriOrigin(consentData.redirectUri)

@@ -8,7 +8,12 @@ import useApi from '@/hooks/use-api';
 import useErrorHandler from '@/hooks/use-error-handler';
 import { searchKeys } from '@/shared/utils/search-parameters';
 import { getLogtoNativeSdk, isNativeWebview } from '@/utils/native-sdk';
-import { buildSocialLandingUri, generateState, storeState } from '@/utils/social-connectors';
+import {
+  buildSocialLandingUri,
+  generateState,
+  removeCallbackLinkFromStorage,
+  storeState,
+} from '@/utils/social-connectors';
 import { storeRedirectContext } from '@/utils/social-redirect-fallback-context';
 
 import useGlobalRedirectTo from './use-global-redirect-to';
@@ -105,7 +110,11 @@ const useSingleSignOn = () => {
       // Invoke Native Sign In flow
       if (isNativeWebview()) {
         nativeSignInHandler(authorizationUri, connectorId);
+        return;
       }
+
+      // Clear any stale native callback link before redirecting in web sign-in flow
+      removeCallbackLinkFromStorage(connectorId);
 
       // Invoke Web Sign In flow
       await redirectTo(authorizationUri);

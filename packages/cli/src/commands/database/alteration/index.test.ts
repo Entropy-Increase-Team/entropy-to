@@ -2,6 +2,7 @@ import { createMockPool } from '@silverhand/slonik';
 import Sinon from 'sinon';
 import { vi, expect, afterAll, describe, it } from 'vitest';
 
+import { chooseRevertAlterationsByTimestamp } from './utils.js';
 import { chooseAlterationsByVersion } from './version.js';
 
 const pool = createMockPool({
@@ -89,4 +90,22 @@ describe('chooseAlterationsByVersion()', () => {
       expect(chooseAlterationsByVersion(files, 'next')).resolves.toEqual(files.slice(0, 12)),
     ]);
   });
+});
+
+describe('chooseRevertAlterationsByTimestamp()', () => {
+  it('selects only deployed alterations newer than target timestamp in reverse order', () => {
+    const deployedAlterations = files.slice(0, 2);
+    expect(chooseRevertAlterationsByTimestamp(deployedAlterations, '1663923770')).toEqual([
+      files[1],
+    ]);
+  });
+
+  it.each(['', '   ', 'Infinity', '-1', 'abc', '1663923770000'])(
+    'rejects invalid or millisecond timestamp %j',
+    (invalidTarget) => {
+      expect(() => chooseRevertAlterationsByTimestamp(files, invalidTarget)).toThrow(
+        /Invalid target timestamp/
+      );
+    }
+  );
 });

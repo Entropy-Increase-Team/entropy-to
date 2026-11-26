@@ -2,6 +2,7 @@ import { ConnectorError, ConnectorErrorCodes, parseJson } from '@logto/connector
 import { requestTokenEndpoint } from '@logto/connector-oauth';
 import { type KyResponse } from 'ky';
 
+import { defaultTimeout } from './constant.js';
 import type { AccessTokenResponse, OidcConnectorConfig } from './types.js';
 import { accessTokenResponseGuard, authResponseGuard } from './types.js';
 
@@ -45,13 +46,14 @@ export const getIdToken = async (
       clientSecretJwtSigningAlgorithm,
     },
     tokenRequestBody: {
+      ...customConfig,
       grantType,
       code,
       redirectUri,
       clientId,
       clientSecret,
-      ...customConfig,
     },
+    timeout: defaultTimeout,
   });
 
   return accessTokenResponseHandler(tokenResponse);
@@ -77,12 +79,13 @@ export const getAccessTokenByRefreshToken = async (
       clientSecretJwtSigningAlgorithm,
     },
     tokenRequestBody: {
+      ...customConfig,
       grantType: 'refresh_token',
       refreshToken,
       clientId,
       clientSecret,
-      ...customConfig,
     },
+    timeout: defaultTimeout,
   });
 
   return accessTokenResponseHandler(tokenResponse);

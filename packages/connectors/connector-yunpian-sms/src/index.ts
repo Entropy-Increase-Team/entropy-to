@@ -1,4 +1,4 @@
-import { assert } from '@silverhand/essentials';
+import { assert, trySafe } from '@silverhand/essentials';
 import { got, RequestError } from 'got';
 
 import type {
@@ -53,6 +53,28 @@ const formatPhoneNumber = (phoneNumber: string) => {
   return phone;
 };
 
+const handleYunpianSendError = (error: unknown): never => {
+  if (
+    error instanceof RequestError &&
+    error.response?.statusCode === 400 &&
+    typeof error.response.body === 'string'
+  ) {
+    const errorResponseBody = error.response.body;
+    const errorBody = trySafe(() => yunpianErrorResponseGuard.parse(JSON.parse(errorResponseBody)));
+    if (errorBody) {
+      console.warn('connector-yunpian-sms: send error', errorBody);
+
+      if (errorBody.msg) {
+        throw new ConnectorError(ConnectorErrorCodes.General, errorBody.msg);
+      }
+    }
+  }
+
+  const safeErrorMessage = error instanceof Error ? error.message : String(error);
+  console.warn('connector-yunpian-sms: send unknown error', safeErrorMessage);
+  throw new ConnectorError(ConnectorErrorCodes.General, `Unknown error: ${safeErrorMessage}`);
+};
+
 const sendMessage =
   (getConfig: GetConnectorConfig): SendMessageFunction =>
   async (data, inputConfig) => {
@@ -93,28 +115,14 @@ const sendMessage =
     try {
       return await got.post(endpoint, {
         form: body,
+        timeout: { request: 5000 },
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
           Accept: 'application/json;charset=utf-8',
         },
       });
     } catch (error: unknown) {
-      if (
-        error instanceof RequestError &&
-        error.response?.statusCode === 400 &&
-        typeof error.response.body === 'string'
-      ) {
-        const errorBody = yunpianErrorResponseGuard.parse(JSON.parse(error.response.body));
-        console.warn('connector-yunpian-sms: send error', errorBody);
-
-        if (errorBody.msg) {
-          throw new ConnectorError(ConnectorErrorCodes.General, errorBody.msg);
-        }
-      }
-
-      const safeErrorMessage = error instanceof Error ? error.message : String(error);
-      console.warn('connector-yunpian-sms: send unknown error', safeErrorMessage);
-      throw new ConnectorError(ConnectorErrorCodes.General, `Unknown error: ${safeErrorMessage}`);
+      return handleYunpianSendError(error);
     }
   };
 

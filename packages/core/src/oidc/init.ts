@@ -454,10 +454,10 @@ export default function initOidc(
       }
 
       return {
+        ...jwtCustomizedClaims,
         ...tokenExchangeClaims,
         ...organizationApiResourceClaims,
         ...authenticationContextClaims,
-        ...jwtCustomizedClaims,
       };
     },
     extraClientMetadata: {

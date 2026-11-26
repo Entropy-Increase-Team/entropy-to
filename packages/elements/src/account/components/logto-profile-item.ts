@@ -60,7 +60,7 @@ export class LogtoProfileItem extends LitElement {
       display: flex;
       flex: 2;
       font: var(--logto-profile-item-value-font, var(--logto-font-body-md));
-      color: var(--logto-profile-item--color, var(--logto-color-typeface-primary));
+      color: var(--logto-profile-item-value-color, var(--logto-color-typeface-primary));
     }
 
     .no-value {

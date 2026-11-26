@@ -71,7 +71,12 @@ export const getAccessToken = async (config: SlackConfig, code: string, redirect
     })
     .json();
 
-  return accessTokenResponseGuard.parse(response);
+  const result = accessTokenResponseGuard.safeParse(response);
+  if (!result.success) {
+    throw new ConnectorError(ConnectorErrorCodes.SocialAuthCodeInvalid, response);
+  }
+
+  return result.data;
 };
 
 const getUserInfo =
@@ -104,11 +109,15 @@ const getUserInfo =
         throw new ConnectorError(ConnectorErrorCodes.SocialAccessTokenInvalid);
       }
 
-      const decodedPayload = Buffer.from(payload, 'base64').toString('utf8');
+      const decodedPayload = Buffer.from(payload, 'base64url').toString('utf8');
       const rawData = parseJson(decodedPayload);
-      const userInfo = userInfoResponseGuard.parse(rawData);
+      const userInfoResult = userInfoResponseGuard.safeParse(rawData);
 
-      const { sub, name, picture, email, email_verified } = userInfo;
+      if (!userInfoResult.success) {
+        throw new ConnectorError(ConnectorErrorCodes.InvalidResponse, userInfoResult.error);
+      }
+
+      const { sub, name, picture, email, email_verified } = userInfoResult.data;
 
       return {
         id: sub,

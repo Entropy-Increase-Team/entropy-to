@@ -103,9 +103,16 @@ const UserInteractionContextProvider = ({ children }: Props) => {
     remove(StorageKeys.verificationIds);
   }, [remove]);
 
-  const setVerificationId = useCallback((type: VerificationType, id: string) => {
-    setVerificationIdsMap((previous) => ({ ...previous, [type]: id }));
-  }, []);
+  const setVerificationId = useCallback(
+    (type: VerificationType, id: string) => {
+      setVerificationIdsMap((previous) => {
+        const updated = { ...previous, [type]: id };
+        set(StorageKeys.verificationIds, updated);
+        return updated;
+      });
+    },
+    [set]
+  );
 
   const userInteractionContext = useMemo<UserInteractionContextType>(
     () => ({

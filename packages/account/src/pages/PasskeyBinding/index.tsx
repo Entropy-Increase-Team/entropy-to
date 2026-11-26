@@ -82,6 +82,13 @@ const PasskeyBinding = () => {
       const [error, response] = await createRegistrationRequest();
 
       if (error || !response) {
+        if (error) {
+          if (await requestStepUp(error, { type: 'enter-subpage' })) {
+            return;
+          }
+
+          await handleError(error);
+        }
         return;
       }
 
@@ -92,7 +99,7 @@ const PasskeyBinding = () => {
     };
 
     void fetchRegistrationOptions();
-  }, [isReady, createRegistrationRequest]);
+  }, [createRegistrationRequest, handleError, isReady, requestStepUp]);
 
   const handleAddPasskey = useCallback(async () => {
     if (!isReady || loading || !registrationData) {

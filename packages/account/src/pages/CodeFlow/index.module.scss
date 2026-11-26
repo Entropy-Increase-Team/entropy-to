@@ -18,7 +18,7 @@
 
 .message {
   font: var(--font-body-2);
-  color: var(--color-text-secondary);
+  color: var(--color-type-secondary);
   min-height: _.unit(5);
   display: flex;
   align-items: center;
@@ -40,7 +40,7 @@
 
   &:disabled {
     cursor: not-allowed;
-    color: var(--color-text-secondary);
+    color: var(--color-type-secondary);
   }
 }
 

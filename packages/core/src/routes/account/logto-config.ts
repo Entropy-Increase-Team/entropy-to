@@ -45,7 +45,7 @@ export default function logtoConfigRoutes<T extends UserRouter>(...args: RouterI
       );
 
       const { fields } = ctx.accountCenter;
-      const mfaControl = fields.mfa ?? fields.passkey;
+      const mfaControl = fields.mfa;
       const passkeyControl = fields.passkey ?? fields.mfa;
       assertThat(
         isFieldReadable(mfaControl) || isFieldReadable(passkeyControl),
@@ -81,7 +81,7 @@ export default function logtoConfigRoutes<T extends UserRouter>(...args: RouterI
       await assertFirstPartyClient(queries, clientId);
 
       const { fields } = ctx.accountCenter;
-      const mfaControl = fields.mfa ?? fields.passkey;
+      const mfaControl = fields.mfa;
       const passkeyControl = fields.passkey ?? fields.mfa;
       const { mfa, passkeySignIn } = ctx.guard.body;
 

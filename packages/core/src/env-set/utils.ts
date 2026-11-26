@@ -16,7 +16,7 @@ export const getTenantEndpoint = (
   }
 
   if (isPathBasedMultiTenancy) {
-    return new URL(path.join(urlSet.endpoint.pathname, id), urlSet.endpoint);
+    return new URL(path.posix.join(urlSet.endpoint.pathname, id), urlSet.endpoint);
   }
 
   if (!isDomainBasedMultiTenancy) {
@@ -43,7 +43,7 @@ const getTenantLocalhost = (
   const localhost = trySafe(() => urlSet.localhostUrl);
 
   if (isPathBasedMultiTenancy && localhost) {
-    return new URL(path.join(localhost.pathname, id), localhost);
+    return new URL(path.posix.join(localhost.pathname, id), localhost);
   }
 
   if (!isDomainBasedMultiTenancy) {

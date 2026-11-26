@@ -34,7 +34,8 @@ const resolveAssetObjectKey = (contextPath: string, requestPath: string) => {
   );
 
   const normalizedPath = path.posix.normalize(decodedPath);
-  const isFileAssetRequest = isFileAssetPath(normalizedPath);
+  const isFileAssetRequest =
+    !normalizedPath.startsWith('/direct/') && isFileAssetPath(normalizedPath);
   const fileObjectKey = `${contextPath}${isFileAssetRequest ? normalizedPath : '/index.html'}`;
   assertThat(
     fileObjectKey.startsWith(`${contextPath}/`),
@@ -42,6 +43,41 @@ const resolveAssetObjectKey = (contextPath: string, requestPath: string) => {
   );
 
   return { fileObjectKey, isFileAssetRequest };
+};
+
+const toError = (reason: unknown): Error =>
+  reason instanceof Error ? reason : new Error(String(reason));
+
+const destroyStreamIfNeeded = (stream: unknown) => {
+  if (
+    stream &&
+    typeof stream === 'object' &&
+    'destroy' in stream &&
+    typeof stream.destroy === 'function'
+  ) {
+    stream.destroy();
+  }
+};
+
+const applyRangeHeadersIfNeeded = (
+  ctx: Parameters<MiddlewareType>[0],
+  rangeProperties: { contentLength?: number } | undefined,
+  { start, end }: { start?: number; end?: number },
+  readableStreamBody: unknown
+) => {
+  if (!rangeProperties) {
+    return;
+  }
+
+  const { contentLength: totalFileSize = 0 } = rangeProperties;
+  if (totalFileSize === 0 || (start !== undefined && start >= totalFileSize)) {
+    destroyStreamIfNeeded(readableStreamBody);
+    throw new RequestError({ code: 'request.range_not_satisfiable', status: 416 });
+  }
+
+  const clampedEnd = Math.min(end ?? totalFileSize - 1, totalFileSize - 1);
+  ctx.set('Accept-Ranges', 'bytes');
+  ctx.set('Content-Range', `bytes ${start ?? 0}-${clampedEnd}/${totalFileSize}`);
 };
 
 /**
@@ -75,9 +111,28 @@ export default function koaServeCustomUiAssets(customUiAssetId: string) {
         new RequestError({ code: 'request.range_not_satisfiable', status: 416 })
       );
 
-      const downloadFilePromise = downloadFile(fileObjectKey, start, count);
-      const filePropertiesPromise = range ? getFileProperties(fileObjectKey) : undefined;
-      const { contentLength = 0, readableStreamBody, contentType } = await downloadFilePromise;
+      const [downloadSettlement, propertiesSettlement] = await Promise.allSettled([
+        downloadFile(fileObjectKey, start, count),
+        range ? getFileProperties(fileObjectKey) : undefined,
+      ]);
+
+      if (downloadSettlement.status === 'rejected') {
+        throw toError(downloadSettlement.reason);
+      }
+
+      const { contentLength = 0, readableStreamBody, contentType } = downloadSettlement.value;
+
+      if (propertiesSettlement.status === 'rejected') {
+        destroyStreamIfNeeded(readableStreamBody);
+        throw toError(propertiesSettlement.reason);
+      }
+
+      applyRangeHeadersIfNeeded(
+        ctx,
+        propertiesSettlement.value,
+        { start, end },
+        readableStreamBody
+      );
 
       ctx.body = readableStreamBody;
       ctx.type = contentType ?? 'application/octet-stream';
@@ -85,15 +140,6 @@ export default function koaServeCustomUiAssets(customUiAssetId: string) {
 
       ctx.set('Cache-Control', isFileAssetRequest ? maxAgeSevenDays : noCache);
       ctx.set('Content-Length', contentLength.toString());
-      if (filePropertiesPromise) {
-        const { contentLength: totalFileSize = 0 } = await filePropertiesPromise;
-
-        ctx.set('Accept-Ranges', 'bytes');
-        ctx.set(
-          'Content-Range',
-          `bytes ${start ?? 0}-${end ?? Math.max(totalFileSize - 1, 0)}/${totalFileSize}`
-        );
-      }
     } catch (error: unknown) {
       if (isTransientAzureStorageError(error)) {
         throw buildStorageDownloadError(error);

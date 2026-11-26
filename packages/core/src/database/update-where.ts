@@ -81,12 +81,22 @@ export const buildUpdateWhereWithPool =
       where,
       jsonbMode,
     }: UpdateWhereData<SetKey, WhereKey>) => {
+      const hasUndefinedWhere = Object.entries(where).some(
+        ([key, value]) => isKeyOfSchema(key) && value === undefined
+      );
+      const setPredicates = connectKeyValueWithEqualSign(set, jsonbMode);
+      const wherePredicates = connectKeyValueWithEqualSign(where, jsonbMode);
+      assertThat(
+        !hasUndefinedWhere && setPredicates.length > 0 && wherePredicates.length > 0,
+        new UpdateError(schema, { set, where, jsonbMode })
+      );
+
       const {
         rows: [data],
       } = await pool.query<Schema>(sql`
         update ${table}
-        set ${sql.join(connectKeyValueWithEqualSign(set, jsonbMode), sql`, `)}
-        where ${sql.join(connectKeyValueWithEqualSign(where, jsonbMode), sql` and `)}
+        set ${sql.join(setPredicates, sql`, `)}
+        where ${sql.join(wherePredicates, sql` and `)}
         ${conditionalSql(returning, () => sql`returning *`)}
       `);
 

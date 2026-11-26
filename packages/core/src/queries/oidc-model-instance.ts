@@ -157,7 +157,7 @@ export const createOidcModelInstanceQueries = (pool: CommonQueryMethods) => {
       ${conditionalSql(!isRefreshToken, () => sql`and ${fields.consumedAt} is null`)}
     `);
 
-    return isRefreshToken || rowCount > 0;
+    return rowCount > 0;
   };
 
   const destroyInstanceById = async (modelName: string, id: string) => {

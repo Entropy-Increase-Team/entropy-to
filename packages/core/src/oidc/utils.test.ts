@@ -388,6 +388,10 @@ describe('buildLoginPromptUrl', () => {
     expect(buildLoginPromptUrl({ direct_sign_in: '' })).toBe('sign-in');
     expect(buildLoginPromptUrl({ direct_sign_in: '..:/evil.com' })).toBe('sign-in');
     expect(buildLoginPromptUrl({ direct_sign_in: 'social:../admin' })).toBe('sign-in');
+    expect(buildLoginPromptUrl({ direct_sign_in: 'social:okta.com' })).toBe(
+      'direct/social/okta.com?fallback=sign-in'
+    );
+    expect(buildLoginPromptUrl({ direct_sign_in: 'social:..okta' })).toBe('sign-in');
   });
 
   it('should forward confirm_redirect_policy to every entry, including step-up', () => {

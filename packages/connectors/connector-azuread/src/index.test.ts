@@ -5,8 +5,19 @@ import { vi, describe, beforeAll, it, expect } from 'vitest';
 import { graphAPIEndpoint } from './constant.js';
 import createConnector from './index.js';
 
+const receivedAuthConfigs: Array<{ authority?: string }> = [];
+
 vi.mock('@azure/msal-node', async () => ({
   ConfidentialClientApplication: class {
+    constructor(config: { auth: { authority?: string } }) {
+      // eslint-disable-next-line @silverhand/fp/no-mutating-methods -- test spy capture
+      receivedAuthConfigs.push(config.auth);
+    }
+
+    async getAuthCodeUrl() {
+      return 'https://login.microsoftonline.com/tenantId/oauth2/v2.0/authorize';
+    }
+
     async acquireTokenByCode() {
       return {
         accessToken: 'accessToken',
@@ -29,6 +40,28 @@ const getConnectorConfig = vi.fn().mockResolvedValue(mockedConfig);
 describe('Azure AD connector', () => {
   it('init without exploding', () => {
     expect(async () => createConnector({ getConfig: getConnectorConfig })).not.toThrow();
+  });
+
+  it('constructs a valid HTTPS authority URL for getAuthorizationUri across platforms', async () => {
+    const connector = await createConnector({ getConfig: getConnectorConfig });
+    const authorizationUri = await connector.getAuthorizationUri(
+      {
+        state: 'state',
+        redirectUri: 'https://example.com/callback',
+        connectorId: 'azuread',
+        connectorFactoryId: 'azuread',
+        jti: 'jti',
+        headers: {},
+      },
+      vi.fn()
+    );
+
+    expect(authorizationUri).toBe(
+      'https://login.microsoftonline.com/tenantId/oauth2/v2.0/authorize'
+    );
+    expect(receivedAuthConfigs.at(-1)?.authority).toBe(
+      'https://login.microsoftonline.com/tenantId'
+    );
   });
 });
 

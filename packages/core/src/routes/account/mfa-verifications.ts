@@ -53,12 +53,15 @@ export default function mfaVerificationsRoutes<T extends UserRouter>(
     async (ctx, next) => {
       const { id: userId, scopes } = ctx.auth;
       const { fields } = ctx.accountCenter;
-
-      assertThat(
+      const isMfaReadable =
         fields.mfa === AccountCenterControlValue.Edit ||
-          fields.mfa === AccountCenterControlValue.ReadOnly,
-        'account_center.field_not_enabled'
-      );
+        fields.mfa === AccountCenterControlValue.ReadOnly;
+      const passkeyControl = fields.passkey ?? fields.mfa;
+      const isPasskeyReadable =
+        passkeyControl === AccountCenterControlValue.Edit ||
+        passkeyControl === AccountCenterControlValue.ReadOnly;
+
+      assertThat(isMfaReadable || isPasskeyReadable, 'account_center.field_not_enabled');
 
       assertThat(
         scopes.has(UserScope.Identities),
@@ -66,7 +69,10 @@ export default function mfaVerificationsRoutes<T extends UserRouter>(
       );
 
       const user = await findUserById(userId);
-      ctx.body = transpileUserMfaVerifications(user.mfaVerifications);
+      const readableMfaVerifications = isMfaReadable
+        ? user.mfaVerifications
+        : user.mfaVerifications.filter(({ type }) => type === MfaFactor.WebAuthn);
+      ctx.body = transpileUserMfaVerifications(readableMfaVerifications);
 
       return next();
     }

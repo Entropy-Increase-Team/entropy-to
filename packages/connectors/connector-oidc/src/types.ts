@@ -90,7 +90,7 @@ export const idTokenVerificationConfigGuard = z.object({ jwksUri: z.string() }).
       algorithms: z.string().array(),
       clockTolerance: z.string().or(z.number()),
       crit: z.record(z.string(), z.boolean()),
-      currentDate: z.date().default(new Date()),
+      currentDate: z.date(),
       maxTokenAge: z.string().or(z.number()),
       subject: z.string(),
       typ: z.string(),

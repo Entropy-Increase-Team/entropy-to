@@ -32,6 +32,7 @@ export const createSubjectTokenQueries = (pool: CommonQueryMethods) => {
       set ${fields.consumedAt}=${convertToTimestamp()}
       where ${fields.id}=${id}
         and ${fields.consumedAt} is null
+        and ${fields.expiresAt} > ${convertToTimestamp()}
     `);
 
     return rowCount > 0;

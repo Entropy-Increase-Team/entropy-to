@@ -10,7 +10,7 @@ export type SlackConfig = z.infer<typeof slackConfigGuard>;
 
 export const userInfoResponseGuard = z.object({
   sub: z.string(),
-  name: z.string(),
+  name: z.string().optional().nullable(),
   picture: z.string().optional().nullable(),
   email: z.string().optional().nullable(),
   email_verified: z.boolean().optional().nullable(),
@@ -24,7 +24,7 @@ export const authResponseGuard = z.object({
 });
 
 export const accessTokenResponseGuard = z.object({
-  ok: z.boolean(),
+  ok: z.literal(true),
   access_token: z.string(),
   token_type: z.string(),
   id_token: z.string(),

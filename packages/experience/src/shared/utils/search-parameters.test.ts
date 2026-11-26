@@ -37,13 +37,17 @@ describe('search parameters utils', () => {
   });
 
   it.each(['/callback/github', '/callback/social/github'])(
-    'keeps confirm_redirect_policy on a %s load',
+    'keeps confirm_redirect_policy, organization_id, and ui_locales on a %s load',
     (pathname) => {
       sessionStorage.setItem('confirm_redirect_policy', 'password');
+      sessionStorage.setItem('organization_id', 'org_123');
+      sessionStorage.setItem('ui_locales', 'zh-CN');
       window.history.pushState(window.history.state, '', `${pathname}?code=foo&state=bar`);
       handleSearchParametersData();
 
       expect(sessionStorage.getItem('confirm_redirect_policy')).toBe('password');
+      expect(sessionStorage.getItem('organization_id')).toBe('org_123');
+      expect(sessionStorage.getItem('ui_locales')).toBe('zh-CN');
       expect(window.location.search).toBe('?code=foo&state=bar');
     }
   );

@@ -1,6 +1,5 @@
-import { assert, conditional, deduplicate } from '@silverhand/essentials';
+import { appendPath, assert, conditional, deduplicate } from '@silverhand/essentials';
 import { got, HTTPError } from 'got';
-import path from 'node:path';
 
 import type { AuthorizationCodeRequest, AuthorizationUrlRequest } from '@azure/msal-node';
 import { ConfidentialClientApplication } from '@azure/msal-node';
@@ -54,7 +53,7 @@ const getAuthorizationUri =
       auth: {
         clientId,
         clientSecret,
-        authority: new URL(path.join(cloudInstance, tenantId)).toString(),
+        authority: appendPath(new URL(cloudInstance), tenantId).toString(),
       },
     });
 
@@ -80,7 +79,7 @@ const getAccessToken = async (config: AzureADConfig, code: string, redirectUri: 
     auth: {
       clientId,
       clientSecret,
-      authority: new URL(path.join(cloudInstance, tenantId)).toString(),
+      authority: appendPath(new URL(cloudInstance), tenantId).toString(),
     },
   });
 
