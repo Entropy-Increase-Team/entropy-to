@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import type { AllConnector, CreateConnector } from '@logto/connector-kit';
 import connectorKitMeta from '@logto/connector-kit/package.json' with { type: 'json' };
@@ -42,13 +43,15 @@ export const loadConnector = async (
   const {
     default: { dependencies },
     // eslint-disable-next-line no-restricted-syntax
-  } = (await import(path.join(connectorPath, 'package.json'), {
+  } = (await import(pathToFileURL(path.join(connectorPath, 'package.json')).href, {
     with: { type: 'json' },
   })) as { default: Record<string, unknown> };
 
   checkConnectorKitVersion(dependencies, ignoreVersionMismatch);
 
-  const loaded: unknown = await import(path.join(connectorPath, 'lib/index.js'));
+  const loaded: unknown = await import(
+    pathToFileURL(path.join(connectorPath, 'lib/index.js')).href
+  );
 
   if (isKeyInObject(loaded, 'default')) {
     // CJS pattern

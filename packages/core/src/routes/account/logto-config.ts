@@ -21,6 +21,9 @@ import type { UserRouter, RouterInitArgs } from '../types.js';
 import { accountApiPrefix } from './constants.js';
 import { assertIdentityVerified } from './utils/identity-verification.js';
 
+const isFieldReadable = (control?: AccountCenterControlValue) =>
+  control === AccountCenterControlValue.Edit || control === AccountCenterControlValue.ReadOnly;
+
 export default function logtoConfigRoutes<T extends UserRouter>(...args: RouterInitArgs<T>) {
   const [router, { queries }] = args;
   const {
@@ -42,10 +45,10 @@ export default function logtoConfigRoutes<T extends UserRouter>(...args: RouterI
       );
 
       const { fields } = ctx.accountCenter;
+      const mfaControl = fields.mfa ?? fields.passkey;
       const passkeyControl = fields.passkey ?? fields.mfa;
       assertThat(
-        passkeyControl === AccountCenterControlValue.Edit ||
-          passkeyControl === AccountCenterControlValue.ReadOnly,
+        isFieldReadable(mfaControl) || isFieldReadable(passkeyControl),
         new RequestError({ code: 'account_center.field_not_enabled', status: 400 })
       );
 
@@ -78,11 +81,31 @@ export default function logtoConfigRoutes<T extends UserRouter>(...args: RouterI
       await assertFirstPartyClient(queries, clientId);
 
       const { fields } = ctx.accountCenter;
+      const mfaControl = fields.mfa ?? fields.passkey;
       const passkeyControl = fields.passkey ?? fields.mfa;
-      assertThat(
-        passkeyControl === AccountCenterControlValue.Edit,
-        new RequestError({ code: 'account_center.field_not_editable', status: 400 })
-      );
+      const { mfa, passkeySignIn } = ctx.guard.body;
+
+      if (mfa !== undefined) {
+        assertThat(
+          mfaControl === AccountCenterControlValue.Edit,
+          new RequestError({ code: 'account_center.field_not_editable', status: 400 })
+        );
+      }
+
+      if (passkeySignIn !== undefined) {
+        assertThat(
+          passkeyControl === AccountCenterControlValue.Edit,
+          new RequestError({ code: 'account_center.field_not_editable', status: 400 })
+        );
+      }
+
+      if (mfa === undefined && passkeySignIn === undefined) {
+        assertThat(
+          mfaControl === AccountCenterControlValue.Edit ||
+            passkeyControl === AccountCenterControlValue.Edit,
+          new RequestError({ code: 'account_center.field_not_editable', status: 400 })
+        );
+      }
 
       const user = await findUserById(userId);
       const updatedUser = await updateUserById(userId, {

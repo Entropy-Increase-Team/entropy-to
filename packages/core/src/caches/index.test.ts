@@ -8,21 +8,28 @@ const { mockEsm } = createMockUtils(jest);
 
 const mockFunction = jest.fn();
 
-const createClient = jest.fn((_config?: { socket?: { tls?: boolean } }) => ({
-  // Standalone clients report readiness via `isReady`; default to ready so commands run.
-  isReady: true,
-  set: mockFunction,
-  get: mockFunction,
-  del: mockFunction,
-  ping: async () => 'PONG',
-  connect: mockFunction,
-  disconnect: mockFunction,
-  on: mockFunction,
-}));
+const createClient = jest.fn(
+  (_config?: { socket?: { tls?: boolean; rejectUnauthorized?: boolean } }) => ({
+    // Standalone clients report readiness via `isReady`; default to ready so commands run.
+    isReady: true,
+    set: mockFunction,
+    get: mockFunction,
+    del: mockFunction,
+    ping: async () => 'PONG',
+    connect: mockFunction,
+    disconnect: mockFunction,
+    on: mockFunction,
+  })
+);
 
 const createCluster = jest.fn(
   (_config?: {
-    defaults?: { username?: string; password?: string; socket?: { tls?: boolean } };
+    rootNodes?: Array<{ url: string }>;
+    defaults?: {
+      username?: string;
+      password?: string;
+      socket?: { tls?: boolean; rejectUnauthorized?: boolean };
+    };
   }) => ({
     // The cluster client only exposes `isOpen`; default to open so commands run.
     isOpen: true,
@@ -265,6 +272,16 @@ describe('TLS socket options derived from the URL protocol', () => {
 
     expect(cache.client).toBeTruthy();
     expect(createClient.mock.calls[0]?.[0]?.socket?.tls).toBe(true);
+    expect(createClient.mock.calls[0]?.[0]?.socket?.rejectUnauthorized).toBe(true);
+  });
+
+  it('allows opting out of TLS certificate verification explicitly via reject_unauthorized=false', () => {
+    jest.clearAllMocks();
+    const cache = new RedisCache('rediss://url?reject_unauthorized=false');
+
+    expect(cache.client).toBeTruthy();
+    expect(createClient.mock.calls[0]?.[0]?.socket?.tls).toBe(true);
+    expect(createClient.mock.calls[0]?.[0]?.socket?.rejectUnauthorized).toBe(false);
   });
 
   it('does not enable TLS for a standalone client when the protocol is redis', () => {
@@ -281,6 +298,8 @@ describe('TLS socket options derived from the URL protocol', () => {
 
     expect(cache.client).toBeTruthy();
     expect(createCluster.mock.calls[0]?.[0]?.defaults?.socket?.tls).toBe(true);
+    expect(createCluster.mock.calls[0]?.[0]?.defaults?.socket?.rejectUnauthorized).toBe(true);
+    expect(createCluster.mock.calls[0]?.[0]?.rootNodes).toEqual([{ url: 'rediss://url' }]);
   });
 
   it('does not enable TLS on the cluster node defaults when the protocol is redis', () => {

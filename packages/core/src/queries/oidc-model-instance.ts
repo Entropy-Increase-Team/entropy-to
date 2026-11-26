@@ -141,13 +141,17 @@ export const createOidcModelInstanceQueries = (pool: CommonQueryMethods) => {
   /**
    * Resolves `true` only for the call that consumes a single-use instance, and `false` when it is
    * already consumed or does not exist. A refresh token stays reusable within
-   * `refreshTokenReuseInterval`, so every call re-stamps it and resolves `true`.
+   * `refreshTokenReuseInterval`, so `consumed_at` is preserved once stamped instead of sliding
+   * forward on every reuse.
    */
   const consumeInstanceById = async (modelName: string, id: string) => {
     const isRefreshToken = modelName === 'RefreshToken';
+    const currentTimestamp = convertToTimestamp();
     const { rowCount } = await pool.query(sql`
       update ${table}
-      set ${fields.consumedAt}=${convertToTimestamp()}
+      set ${fields.consumedAt}=${
+        isRefreshToken ? sql`coalesce(${fields.consumedAt}, ${currentTimestamp})` : currentTimestamp
+      }
       where ${fields.modelName}=${modelName}
       and ${fields.id}=${id}
       ${conditionalSql(!isRefreshToken, () => sql`and ${fields.consumedAt} is null`)}

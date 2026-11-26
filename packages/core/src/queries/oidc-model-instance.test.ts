@@ -23,6 +23,7 @@ const {
   findPayloadById,
   findPayloadByUid,
   findPayloadByUserCode,
+  consumeInstanceById,
   destroyInstanceById,
   revokeInstanceByGrantId,
   revokeInstanceByUserId,
@@ -203,6 +204,39 @@ describe('oidc-model-instance query', () => {
 
     await expect(findPayloadByUserCode(instance.modelName, userCode)).resolves.toBeUndefined();
     expect(mockQuery).toHaveBeenCalledTimes(2);
+  });
+
+  it('consumeInstanceById preserves first consumed_at for RefreshToken and guards single-use models', async () => {
+    const singleUseSql = sql`
+      update ${table}
+      set ${fields.consumedAt}=to_timestamp($1)
+      where ${fields.modelName}=$2
+      and ${fields.id}=$3
+      and ${fields.consumedAt} is null
+    `;
+    // @ts-expect-error - mock update query
+    mockQuery.mockImplementationOnce(async (sql, values) => {
+      expectSqlAssert(sql, singleUseSql.sql);
+      expect(values).toEqual([expect.any(Number), 'AuthorizationCode', instance.id]);
+      return { rowCount: 0 };
+    });
+
+    await expect(consumeInstanceById('AuthorizationCode', instance.id)).resolves.toBe(false);
+
+    const refreshSql = sql`
+      update ${table}
+      set ${fields.consumedAt}=coalesce(${fields.consumedAt}, to_timestamp($1))
+      where ${fields.modelName}=$2
+      and ${fields.id}=$3
+    `;
+    // @ts-expect-error - mock update query
+    mockQuery.mockImplementationOnce(async (sql, values) => {
+      expectSqlAssert(sql, refreshSql.sql);
+      expect(values).toEqual([expect.any(Number), 'RefreshToken', instance.id]);
+      return { rowCount: 1 };
+    });
+
+    await expect(consumeInstanceById('RefreshToken', instance.id)).resolves.toBe(true);
   });
 
   it('destroyInstanceById', async () => {

@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- Token exchange grant test scenarios share the OIDC mock harness in this file. */
 import { MfaFactor, type Organization, type SubjectToken } from '@logto/schemas';
 import { type KoaContextWithOIDC, errors } from 'oidc-provider';
 import Sinon from 'sinon';
@@ -21,12 +22,12 @@ jest.unstable_mockModule('jose', () => ({
 const { buildHandler } = await import('./index.js');
 
 const findSubjectToken = jest.fn();
-const updateSubjectTokenById = jest.fn();
+const consumeSubjectToken = jest.fn(async () => true);
 
 const mockQueries = {
   subjectTokens: {
     findSubjectToken,
-    updateSubjectTokenById,
+    consumeSubjectToken,
   },
   applications: {
     // The organization token cases require a registered first-party application.
@@ -137,7 +138,8 @@ afterAll(() => {
 describe('token exchange', () => {
   afterEach(() => {
     findSubjectToken.mockClear();
-    updateSubjectTokenById.mockClear();
+    consumeSubjectToken.mockClear();
+    consumeSubjectToken.mockResolvedValue(true);
     assertUserHasApplicationAccess.mockClear();
   });
 
@@ -201,7 +203,21 @@ describe('token exchange', () => {
     assertUserHasApplicationAccess.mockRejectedValueOnce(accessError);
     await expect(mockHandler(tenant)(ctx)).rejects.toThrow(errors.AccessDenied);
 
-    expect(updateSubjectTokenById).not.toHaveBeenCalled();
+    expect(consumeSubjectToken).not.toHaveBeenCalled();
+  });
+
+  it('should reject concurrent subject token replay when atomic consume returns false', async () => {
+    const ctx = createPreparedContext();
+    findSubjectToken.mockResolvedValueOnce(createValidSubjectToken());
+    consumeSubjectToken.mockResolvedValueOnce(false);
+    Sinon.stub(getProviderConfiguration(ctx.oidc.provider), 'findAccount').resolves({ accountId });
+
+    const entityStub = Sinon.stub(ctx.oidc, 'entity');
+    await expect(mockHandler(mockTenant)(ctx)).rejects.toMatchError(
+      new errors.InvalidGrant('subject token is already consumed')
+    );
+    expect(consumeSubjectToken).toHaveBeenCalledWith(subjectTokenId);
+    expect(entityStub.calledWith('AccessToken')).toBe(false);
   });
 
   // The handler returns void so we cannot check the return value, and it's also not
@@ -215,7 +231,7 @@ describe('token exchange', () => {
 
     const entityStub = Sinon.stub(ctx.oidc, 'entity');
     await expect(mockHandler(mockTenant)(ctx)).resolves.toBeUndefined();
-    expect(updateSubjectTokenById).toHaveBeenCalled();
+    expect(consumeSubjectToken).toHaveBeenCalledWith(subjectTokenId);
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const [key, value] = entityStub.lastCall.args;
@@ -285,7 +301,7 @@ describe('token exchange', () => {
 
       const entityStub = Sinon.stub(ctx.oidc, 'entity');
       await expect(mockHandler(tenant)(ctx)).resolves.toBeUndefined();
-      expect(updateSubjectTokenById).toHaveBeenCalled();
+      expect(consumeSubjectToken).toHaveBeenCalled();
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const [key, value] = entityStub.lastCall.args;
@@ -357,7 +373,7 @@ describe('token exchange', () => {
       const entityStub = Sinon.stub(ctx.oidc, 'entity');
       await expect(mockHandler(mockTenant)(ctx)).resolves.toBeUndefined();
       // JWT tokens should NOT be consumption-tracked
-      expect(updateSubjectTokenById).not.toHaveBeenCalled();
+      expect(consumeSubjectToken).not.toHaveBeenCalled();
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const [key, value] = entityStub.lastCall.args;
@@ -402,7 +418,7 @@ describe('token exchange', () => {
       const entityStub = Sinon.stub(ctx.oidc, 'entity');
       await expect(mockHandler(mockTenant)(ctx)).resolves.toBeUndefined();
       // Opaque tokens should NOT be consumption-tracked
-      expect(updateSubjectTokenById).not.toHaveBeenCalled();
+      expect(consumeSubjectToken).not.toHaveBeenCalled();
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const [key, value] = entityStub.lastCall.args;
@@ -477,7 +493,7 @@ describe('token exchange', () => {
 
       const entityStub = Sinon.stub(ctx.oidc, 'entity');
       await expect(mockHandler(mockTenant)(ctx)).resolves.toBeUndefined();
-      expect(updateSubjectTokenById).toHaveBeenCalled();
+      expect(consumeSubjectToken).toHaveBeenCalled();
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const [key, value] = entityStub.lastCall.args;
@@ -490,3 +506,4 @@ describe('token exchange', () => {
     });
   });
 });
+/* eslint-enable max-lines */

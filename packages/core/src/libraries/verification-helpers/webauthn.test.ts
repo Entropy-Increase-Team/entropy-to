@@ -53,11 +53,18 @@ describe('generateWebAuthnRegistrationOptions', () => {
 });
 
 describe('verifyWebAuthnRegistration', () => {
-  it('should verify registration response', async () => {
+  it('should verify registration response and forward expectedRPID when provided', async () => {
     await expect(
-      verifyWebAuthnRegistration(mockBindWebAuthnPayload, 'challenge', [origin])
+      verifyWebAuthnRegistration(mockBindWebAuthnPayload, 'challenge', [origin], rpId)
     ).resolves.toHaveProperty('verified', true);
-    expect(verifyRegistrationResponse).toHaveBeenCalled();
+    expect(verifyRegistrationResponse).toHaveBeenCalledWith(
+      expect.objectContaining({
+        expectedChallenge: 'challenge',
+        expectedOrigin: [origin],
+        expectedRPID: rpId,
+        requireUserVerification: true,
+      })
+    );
   });
 });
 

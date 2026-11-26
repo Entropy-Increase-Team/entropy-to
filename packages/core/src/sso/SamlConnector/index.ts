@@ -333,10 +333,20 @@ class SamlConnector {
       // Other appearance of SAML metadata validator is using '@authenio/samlify-node-xmllint',
       // but this validator failed to resolve a valid XML file. Align the use of validator later on.
       try {
-        XMLValidator.validate(idpMetadataXml, {
+        const validationResult = XMLValidator.validate(idpMetadataXml, {
           allowBooleanAttributes: true,
         });
+        if (validationResult !== true) {
+          throw new SsoConnectorError(SsoConnectorErrorCodes.InvalidMetadata, {
+            message: SsoConnectorConfigErrorCodes.InvalidSamlXmlMetadata,
+            metadata: idpMetadataXml,
+            error: validationResult.err,
+          });
+        }
       } catch (error: unknown) {
+        if (error instanceof SsoConnectorError) {
+          throw error;
+        }
         throw new SsoConnectorError(SsoConnectorErrorCodes.InvalidMetadata, {
           message: SsoConnectorConfigErrorCodes.InvalidSamlXmlMetadata,
           metadata: idpMetadataXml,

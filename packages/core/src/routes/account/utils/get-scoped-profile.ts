@@ -52,7 +52,7 @@ export const getScopedProfile = async (
     user,
     profile: {
       id,
-      ...conditional(ssoIdentities),
+      ...conditional(ssoIdentities && { ssoIdentities }),
       ...conditional(scopes.has(UserScope.Identities) && { identities }),
       ...conditional(scopes.has(UserScope.CustomData) && { customData }),
       ...conditional(scopes.has(UserScope.Email) && { primaryEmail }),

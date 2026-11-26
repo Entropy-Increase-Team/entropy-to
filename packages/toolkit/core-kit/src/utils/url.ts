@@ -177,6 +177,10 @@ export const parseRange = (range: string) => {
 
   const start = rangeMatch?.[1] === undefined ? undefined : Number.parseInt(rangeMatch[1], 10);
   const end = rangeMatch?.[2] === undefined ? undefined : Number.parseInt(rangeMatch[2], 10);
+  if (start !== undefined && end !== undefined && end < start) {
+    throw new Error('Range not satisfiable.');
+  }
+
   const count = end === undefined ? undefined : end - (start ?? 0) + 1;
 
   return {

@@ -224,6 +224,7 @@ export default function mfaVerificationsRoutes<T extends UserRouter>(
             id: newIdentifierVerificationRecordId,
             queries,
             libraries,
+            userId,
           });
           assertThat(newVerificationRecord.isVerified, 'verification_record.not_found');
 
@@ -373,12 +374,18 @@ export default function mfaVerificationsRoutes<T extends UserRouter>(
   router.get(
     `${accountApiPrefix}/mfa-verifications/backup-codes`,
     koaGuard({
-      status: [200, 401, 403, 404],
+      status: [200, 400, 401, 403, 404],
     }),
     async (ctx, next) => {
       const { id: userId, scopes, clientId } = ctx.auth;
 
       assertIdentityVerified(ctx);
+      const { fields } = ctx.accountCenter;
+      assertThat(
+        fields.mfa === AccountCenterControlValue.Edit ||
+          fields.mfa === AccountCenterControlValue.ReadOnly,
+        'account_center.field_not_enabled'
+      );
       await assertFirstPartyClient(queries, clientId);
 
       assertThat(

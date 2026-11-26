@@ -73,7 +73,8 @@ export const generateWebAuthnRegistrationOptions = async ({
 export const verifyWebAuthnRegistration = async (
   payload: Omit<BindWebAuthnPayload, 'type'>,
   challenge: string,
-  origins: string[]
+  origins: string[],
+  rpId?: string
 ) => {
   const options: VerifyRegistrationResponseOpts = {
     response: {
@@ -82,6 +83,7 @@ export const verifyWebAuthnRegistration = async (
     },
     expectedChallenge: challenge,
     expectedOrigin: origins,
+    ...(rpId ? { expectedRPID: rpId } : {}),
     // Enforce verification to align with passkey sign-in requirements.
     requireUserVerification: true,
   };

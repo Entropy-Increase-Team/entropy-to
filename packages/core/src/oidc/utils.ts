@@ -1,5 +1,3 @@
-import path from 'node:path';
-
 import { GoogleConnector } from '@logto/connector-kit';
 import type {
   CustomClientMetadata,
@@ -349,7 +347,7 @@ export const isStepUpPrompt = (promptDetails: unknown): boolean => {
  * `confirm_redirect_policy`, are kept. A prompt whose details carry only the requested ACR values
  * (no session) keeps the regular sign-in URL.
  */
-// eslint-disable-next-line complexity
+
 export const buildLoginPromptUrl = (
   params: ExtraParamsObject,
   sharedParams?: SharedExperienceParams,
@@ -398,15 +396,19 @@ export const buildLoginPromptUrl = (
   appendExtraParam(ExtraParamsKey.Identifier);
 
   // Reuse DirectSignIn page to handle Google One Tap credential.
-  // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-  if (directSignIn || googleOneTapCredential) {
+  const directSignInSegments = (() => {
+    if (directSignIn) {
+      const [method, target, ...rest] = directSignIn.split(':');
+      const isValid =
+        rest.length === 0 && [method, target].every((part) => !part || /^[\w-]+$/.test(part));
+      return isValid && method ? (target ? [method, target] : [method]) : undefined;
+    }
+    return conditional(googleOneTapCredential && ['social', GoogleConnector.target]);
+  })();
+
+  if (directSignInSegments) {
     searchParams.append('fallback', firstScreen);
-    const [method, target] =
-      directSignIn?.split(':') ??
-      // Only add Google connector fallback when Google One Tap credential is present.
-      conditional(googleOneTapCredential && ['social', GoogleConnector.target]) ??
-      [];
-    return path.join('direct', method ?? '', target ?? '') + getSearchParamString();
+    return ['direct', ...directSignInSegments].join('/') + getSearchParamString();
   }
 
   return firstScreen + getSearchParamString();

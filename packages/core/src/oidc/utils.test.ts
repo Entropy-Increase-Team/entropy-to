@@ -386,6 +386,8 @@ describe('buildLoginPromptUrl', () => {
       'direct/method?fallback=sign-in'
     );
     expect(buildLoginPromptUrl({ direct_sign_in: '' })).toBe('sign-in');
+    expect(buildLoginPromptUrl({ direct_sign_in: '..:/evil.com' })).toBe('sign-in');
+    expect(buildLoginPromptUrl({ direct_sign_in: 'social:../admin' })).toBe('sign-in');
   });
 
   it('should forward confirm_redirect_policy to every entry, including step-up', () => {

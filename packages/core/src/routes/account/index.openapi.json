@@ -687,6 +687,9 @@
           "200": {
             "description": "The backup codes were retrieved successfully."
           },
+          "400": {
+            "description": "The MFA field is not enabled in the account center."
+          },
           "401": {
             "description": "Permission denied, recent user authentication is required or the access token does not include the `identities` scope."
           },

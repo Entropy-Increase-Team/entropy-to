@@ -17,12 +17,12 @@ export default function koaConsoleRedirectProxy<
     const hasUser = await hasActiveUsers();
 
     if ((ctx.path === '/' || ctx.path === ossConsolePath) && !hasUser) {
-      ctx.redirect(path.join(ossConsolePath, '/welcome'));
+      ctx.redirect(path.posix.join(ossConsolePath, '/welcome'));
 
       return;
     }
 
-    if ((ctx.path === '/' || ctx.path === path.join(ossConsolePath, '/welcome')) && hasUser) {
+    if ((ctx.path === '/' || ctx.path === path.posix.join(ossConsolePath, '/welcome')) && hasUser) {
       ctx.redirect(ossConsolePath);
 
       return;

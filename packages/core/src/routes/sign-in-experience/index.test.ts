@@ -1467,5 +1467,22 @@ describe('PATCH /sign-in-exp username policy', () => {
     // mount the error handler that serializes the refine message into the response body.
     expect(response.status).toBe(400);
   });
+
+  it('rejects non-http(s) URLs in sign-in experience external links', async () => {
+    for (const field of [
+      'termsOfUseUrl',
+      'privacyPolicyUrl',
+      'supportWebsiteUrl',
+      'unknownSessionRedirectUrl',
+    ] as const) {
+      // eslint-disable-next-line no-await-in-loop -- sequential route assertions
+      const response = await signInExperienceRequester
+        .patch('/sign-in-exp')
+        // eslint-disable-next-line no-script-url -- testing rejection of javascript: URLs
+        .send({ [field]: 'javascript:alert(1)' });
+
+      expect(response.status).toBe(400);
+    }
+  });
 });
 /* eslint-enable max-lines */
