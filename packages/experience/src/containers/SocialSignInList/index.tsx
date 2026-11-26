@@ -21,9 +21,16 @@ const SocialSignInList = ({ className, socialConnectors = [] }: Props) => {
   const [loadingConnectorId, setLoadingConnectorId] = useState<string>();
 
   const handleClick = async (connector: ExperienceSocialConnector) => {
+    if (loadingConnectorId) {
+      return;
+    }
+
     setLoadingConnectorId(connector.id);
-    await invokeSocialSignIn(connector);
-    setLoadingConnectorId(undefined);
+    try {
+      await invokeSocialSignIn(connector);
+    } finally {
+      setLoadingConnectorId(undefined);
+    }
   };
 
   return (
@@ -39,6 +46,7 @@ const SocialSignInList = ({ className, socialConnectors = [] }: Props) => {
             logo={getLogoUrl({ theme, logoUrl, darkLogoUrl })}
             target={target}
             isLoading={loadingConnectorId === id}
+            isDisabled={Boolean(loadingConnectorId) && loadingConnectorId !== id}
             onClick={() => {
               void handleClick(connector);
             }}

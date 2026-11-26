@@ -2,7 +2,7 @@ import { yes } from '@silverhand/essentials';
 import { z } from 'zod';
 
 import { tokenResponseScopeGuard } from '@logto/connector-kit';
-import { oauth2ConfigGuard } from '@logto/connector-oauth';
+import { httpUrlGuard, oauth2ConfigGuard } from '@logto/connector-oauth';
 
 const scopeOpenid = 'openid';
 export const delimiter = /[ +]/;
@@ -82,7 +82,7 @@ export const authRequestOptionalConfigGuard = z
 /**
  * See https://github.com/panva/jose/blob/main/docs/interfaces/jwt_verify.JWTVerifyOptions.md for details.
  */
-export const idTokenVerificationConfigGuard = z.object({ jwksUri: z.string() }).merge(
+export const idTokenVerificationConfigGuard = z.object({ jwksUri: httpUrlGuard }).merge(
   z
     .object({
       issuer: z.string().or(z.string().array()),

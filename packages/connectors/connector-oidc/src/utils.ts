@@ -1,5 +1,7 @@
+import { conditional } from '@silverhand/essentials';
+
 import { ConnectorError, ConnectorErrorCodes, parseJson } from '@logto/connector-kit';
-import { requestTokenEndpoint } from '@logto/connector-oauth';
+import { requestTokenEndpoint, sanitizeCustomTokenParameters } from '@logto/connector-oauth';
 import { type KyResponse } from 'ky';
 
 import { defaultTimeout } from './constant.js';
@@ -19,7 +21,8 @@ const accessTokenResponseHandler = async (response: KyResponse): Promise<AccessT
 export const getIdToken = async (
   config: OidcConnectorConfig,
   data: unknown,
-  redirectUri: string
+  redirectUri: string,
+  codeVerifier?: string
 ) => {
   const result = authResponseGuard.safeParse(data);
 
@@ -46,12 +49,13 @@ export const getIdToken = async (
       clientSecretJwtSigningAlgorithm,
     },
     tokenRequestBody: {
-      ...customConfig,
+      ...sanitizeCustomTokenParameters(customConfig),
       grantType,
       code,
       redirectUri,
       clientId,
       clientSecret,
+      ...conditional(codeVerifier && { codeVerifier }),
     },
     timeout: defaultTimeout,
   });
@@ -79,7 +83,7 @@ export const getAccessTokenByRefreshToken = async (
       clientSecretJwtSigningAlgorithm,
     },
     tokenRequestBody: {
-      ...customConfig,
+      ...sanitizeCustomTokenParameters(customConfig),
       grantType: 'refresh_token',
       refreshToken,
       clientId,

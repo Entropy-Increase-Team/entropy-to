@@ -4,6 +4,7 @@ import {
   tokenEndpointAuthOptionsFormItems,
   clientSecretFormItem,
   clientIdFormItem,
+  enablePkceFormItem,
   tokenEndpointFormItem,
   authorizationEndpointFormItem,
   scopeFormItem,
@@ -40,6 +41,7 @@ export const defaultMetadata: ConnectorMetadata = {
       ...scopeFormItem,
       required: true,
     },
+    enablePkceFormItem,
     {
       key: 'acceptStringTypedBooleanClaims',
       label: 'Accept String-typed Boolean Claims',

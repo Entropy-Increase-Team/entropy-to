@@ -35,11 +35,20 @@ export enum ClientSecretJwtSigningAlgorithm {
   HS512 = 'HS512',
 }
 
+export const httpUrlGuard = z.string().refine((value) => {
+  try {
+    const { protocol } = new URL(value);
+    return protocol === 'http:' || protocol === 'https:';
+  } catch {
+    return false;
+  }
+}, 'Must be a valid HTTP or HTTPS URL.');
+
 export const oauth2ConfigGuard = z.object({
   responseType: z.literal('code').optional().default('code'),
   grantType: z.literal('authorization_code').optional().default('authorization_code'),
-  authorizationEndpoint: z.string(),
-  tokenEndpoint: z.string(),
+  authorizationEndpoint: httpUrlGuard,
+  tokenEndpoint: httpUrlGuard,
   clientId: z.string(),
   clientSecret: z.string(),
   tokenEndpointAuthMethod: z
@@ -51,6 +60,7 @@ export const oauth2ConfigGuard = z.object({
     .optional()
     .default(ClientSecretJwtSigningAlgorithm.HS256),
   scope: z.string().optional(),
+  enablePkce: z.boolean().optional().default(false),
 });
 
 export const oauth2AuthResponseGuard = z.object({
@@ -62,7 +72,7 @@ export type Oauth2AuthResponse = z.infer<typeof oauth2AuthResponseGuard>;
 
 export const oauth2AccessTokenResponseGuard = z.object({
   access_token: z.string(),
-  token_type: z.string(),
+  token_type: z.string().optional().default('Bearer'),
   expires_in: z.number().or(z.string()).optional(),
   refresh_token: z.string().optional(),
   scope: tokenResponseScopeGuard.optional(),

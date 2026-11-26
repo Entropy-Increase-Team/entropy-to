@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { oauth2ConfigGuard } from './oauth2/types.js';
+import { httpUrlGuard, oauth2ConfigGuard } from './oauth2/types.js';
 
 export const profileMapGuard = z
   .object({
@@ -39,7 +39,7 @@ const tokenEndpointResponseTypeGuard = z
 export type TokenEndpointResponseType = z.input<typeof tokenEndpointResponseTypeGuard>;
 
 export const oauth2ConnectorConfigGuard = oauth2ConfigGuard.extend({
-  userInfoEndpoint: z.string(),
+  userInfoEndpoint: httpUrlGuard,
   tokenEndpointResponseType: tokenEndpointResponseTypeGuard,
   profileMap: profileMapGuard,
   customConfig: z.record(z.string()).optional(),

@@ -46,17 +46,18 @@ export const handleSearchParametersData = () => {
     return;
   }
 
+  // A social or SSO callback (`/callback/...`) carries query parameters issued by the external
+  // identity provider rather than Logto's sign-in request, so keep stored session context and URL
+  // parameters untouched.
+  if (window.location.pathname.startsWith('/callback/')) {
+    return;
+  }
+
   const parameters = new URLSearchParams(search);
-  // A social or SSO callback (`/callback/...?code=...`) resumes the same sign-in, so it keeps the
-  // stored `confirm_redirect_policy`.
-  const isRedirectCallback = window.location.pathname.startsWith('/callback/');
 
   // Store known search keys to the session storage and remove them from the URL to keep the URL
   // clean.
-  for (const key of [
-    ...Object.values(searchKeys),
-    ...(isRedirectCallback ? [] : [confirmRedirectPolicyKey]),
-  ]) {
+  for (const key of [...Object.values(searchKeys), confirmRedirectPolicyKey]) {
     const value = parameters.get(key);
     if (value) {
       sessionStorage.setItem(key, value);
@@ -64,7 +65,7 @@ export const handleSearchParametersData = () => {
         // Keep app_id in the URL for resuming sessions
         parameters.delete(key);
       }
-    } else if (key !== searchKeys.appId && !isRedirectCallback) {
+    } else if (key !== searchKeys.appId) {
       sessionStorage.removeItem(key);
     }
   }
