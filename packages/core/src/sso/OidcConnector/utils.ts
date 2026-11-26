@@ -199,9 +199,9 @@ export const getIdTokenClaims = async (
 
     const { data } = result;
 
-    if (data.nonce) {
+    if (Boolean(nonceFromSession) || Boolean(data.nonce)) {
       assert(
-        data.nonce === nonceFromSession,
+        Boolean(nonceFromSession) && data.nonce === nonceFromSession,
         new SsoConnectorError(SsoConnectorErrorCodes.AuthorizationFailed, {
           message: 'nonce does not match',
         })

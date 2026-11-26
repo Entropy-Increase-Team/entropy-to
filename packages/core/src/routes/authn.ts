@@ -90,6 +90,8 @@ export default function authnRoutes<T extends AnonymousRouter>(
         );
       }
 
+      assertThat(sub, new RequestError({ code: 'auth.unauthorized', status: 401 }));
+
       ctx.body = {
         'X-Hasura-User-Id': sub,
         'X-Hasura-Role': expectedRole,

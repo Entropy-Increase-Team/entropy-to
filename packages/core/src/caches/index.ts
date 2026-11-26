@@ -151,7 +151,9 @@ abstract class RedisCacheBase implements CacheStore {
     const caFile = url?.searchParams.get('certroot');
 
     return {
-      rejectUnauthorized: yes(url?.searchParams.get('reject_unauthorized')),
+      rejectUnauthorized: url?.searchParams.has('reject_unauthorized')
+        ? yes(url.searchParams.get('reject_unauthorized'))
+        : true,
       tls: url?.protocol === 'rediss:',
       cert: certFile ? fs.readFileSync(certFile).toString() : undefined,
       key: keyFile ? fs.readFileSync(keyFile).toString() : undefined,
@@ -221,7 +223,7 @@ export class RedisClusterCache extends RedisCacheBase {
 
     const rootNodes = hosts.map((host) => {
       return {
-        url: 'redis://' + host,
+        url: `${connectionUrl.protocol}//${host}`,
       };
     });
 

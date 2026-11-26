@@ -52,14 +52,16 @@ export const buildVerificationRecordByIdAndType = async <K extends keyof Verific
   id,
   queries,
   libraries,
+  userId,
 }: {
   type: K;
   id: string;
   queries: Queries;
   libraries: Libraries;
+  userId?: string;
 }): Promise<VerificationRecordMap[K]> => {
   const records = new VerificationRecordsMap();
-  records.setValue(await getVerificationRecordById({ id, queries, libraries }));
+  records.setValue(await getVerificationRecordById({ id, queries, libraries, userId }));
 
   const instance = records.get(type);
 

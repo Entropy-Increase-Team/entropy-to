@@ -53,6 +53,17 @@ const mfaPatchGuard = mfaGuard.extend({
   ),
 });
 
+const safeHttpUrlGuard = string()
+  .url()
+  .refine((value) => {
+    try {
+      const { protocol } = new URL(value);
+      return protocol === 'http:' || protocol === 'https:';
+    } catch {
+      return false;
+    }
+  }, 'URL must use http or https protocol.');
+
 export default function signInExperiencesRoutes<T extends ManagementApiRouter>(
   ...args: RouterInitArgs<T>
 ) {
@@ -102,11 +113,11 @@ export default function signInExperiencesRoutes<T extends ManagementApiRouter>(
         })
         .merge(
           object({
-            termsOfUseUrl: string().url().optional().nullable().or(literal('')),
-            privacyPolicyUrl: string().url().optional().nullable().or(literal('')),
+            termsOfUseUrl: safeHttpUrlGuard.optional().nullable().or(literal('')),
+            privacyPolicyUrl: safeHttpUrlGuard.optional().nullable().or(literal('')),
             supportEmail: string().email().optional().nullable().or(literal('')),
-            supportWebsiteUrl: string().url().optional().nullable().or(literal('')),
-            unknownSessionRedirectUrl: string().url().optional().nullable().or(literal('')),
+            supportWebsiteUrl: safeHttpUrlGuard.optional().nullable().or(literal('')),
+            unknownSessionRedirectUrl: safeHttpUrlGuard.optional().nullable().or(literal('')),
             mfa: mfaPatchGuard,
             passwordExpiration: passwordExpirationPolicyGuard,
             verificationCodePolicy: verificationCodePolicyGuard,

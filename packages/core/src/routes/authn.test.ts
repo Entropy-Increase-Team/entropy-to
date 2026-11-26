@@ -134,6 +134,13 @@ describe('authn route for Hasura', () => {
       expect(response.status).toEqual(401);
     });
 
+    it('throws 401 if neither unauthorized role nor expected role presents', async () => {
+      const response = await request
+        .get('/authn/hasura')
+        .query({ resource: 'https://api.logto.io' });
+      expect(response.status).toEqual(401);
+    });
+
     it('falls back to unauthorized role with user id if no expected resource present', async () => {
       const response = await request
         .get('/authn/hasura')

@@ -88,7 +88,31 @@ describe('koaServeCustomUiAssets middleware', () => {
 
     expect(ctx.type).toEqual('text/javascript');
     expect(ctx.body).toEqual(mockBodyStream);
+    expect(ctx.response.headers['cache-control']).toEqual('max-age=604800');
     expect(mockedGetFileProperties).not.toHaveBeenCalled();
+  });
+
+  it('should reject path traversal attempts with 404 before querying storage', async () => {
+    for (const rawPath of [
+      '/../../other-tenant/other-asset/scripts.js',
+      '/%2e%2e/%2e%2e/other-tenant/scripts.js',
+      '/%2f..%2fother-tenant%2fscripts.js',
+      '/..\\other-tenant\\scripts.js',
+      '/invalid%ZZescape.js',
+    ]) {
+      const ctx = createMockContext({ url: '/placeholder' });
+      // Assign raw request.path directly because createMockContext normalizes `options.url` via `new URL()`,
+      // whereas real HTTP `req.url` (`--path-as-is` or `%2f`-encoded segments) reaches Koa un-normalized.
+
+      ctx.request.path = rawPath;
+      // eslint-disable-next-line no-await-in-loop -- sequential assertions on shared storage mocks
+      await expect(koaServeCustomUiAssets('custom-ui-asset-id')(ctx, next)).rejects.toMatchError(
+        new RequestError({ code: 'entity.not_found', status: 404 })
+      );
+    }
+
+    expect(mockedIsFileExisted).not.toHaveBeenCalled();
+    expect(mockedDownloadFile).not.toHaveBeenCalled();
   });
 
   it('should serve the index.html', async () => {
@@ -189,6 +213,17 @@ describe('koaServeCustomUiAssets middleware', () => {
     const ctx = createMockContext({ url: '/video.mp4', headers: { range: 'invalid-range' } });
 
     await expect(koaServeCustomUiAssets('custom-ui-asset-id')(ctx, next)).rejects.toMatchError(
+      new RequestError({ code: 'request.range_not_satisfiable', status: 416 })
+    );
+
+    const invertedRangeCtx = createMockContext({
+      url: '/video.mp4',
+      headers: { range: 'bytes=50-10' },
+    });
+
+    await expect(
+      koaServeCustomUiAssets('custom-ui-asset-id')(invertedRangeCtx, next)
+    ).rejects.toMatchError(
       new RequestError({ code: 'request.range_not_satisfiable', status: 416 })
     );
   });

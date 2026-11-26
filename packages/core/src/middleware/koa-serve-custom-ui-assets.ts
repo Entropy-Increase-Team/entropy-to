@@ -1,3 +1,5 @@
+import path from 'node:path';
+
 import { isFileAssetPath, parseRange } from '@logto/core-kit';
 import { tryThat } from '@silverhand/essentials';
 import type { MiddlewareType } from 'koa';
@@ -11,13 +13,36 @@ import { getTenantId } from '#src/utils/tenant.js';
 import RequestError from '../errors/RequestError/index.js';
 
 const noCache = 'no-cache, no-store, must-revalidate';
-const maxAgeSevenDays = 'max-age=604_800_000';
+const maxAgeSevenDays = 'max-age=604800';
 
 const buildStorageDownloadError = (error: unknown) =>
   new RequestError(
     { code: 'storage.download_error', status: 502 },
     { details: error instanceof Error ? error.message : String(error) }
   );
+
+const resolveAssetObjectKey = (contextPath: string, requestPath: string) => {
+  const decodedPath = tryThat(
+    () => decodeURIComponent(requestPath),
+    new RequestError({ code: 'entity.not_found', status: 404 })
+  );
+  assertThat(
+    !decodedPath.includes('\0') &&
+      !decodedPath.includes('\\') &&
+      !decodedPath.split('/').some((segment) => segment === '.' || segment === '..'),
+    new RequestError({ code: 'entity.not_found', status: 404 })
+  );
+
+  const normalizedPath = path.posix.normalize(decodedPath);
+  const isFileAssetRequest = isFileAssetPath(normalizedPath);
+  const fileObjectKey = `${contextPath}${isFileAssetRequest ? normalizedPath : '/index.html'}`;
+  assertThat(
+    fileObjectKey.startsWith(`${contextPath}/`),
+    new RequestError({ code: 'entity.not_found', status: 404 })
+  );
+
+  return { fileObjectKey, isFileAssetRequest };
+};
 
 /**
  * Middleware that serves custom UI assets user uploaded previously through sign-in experience settings.
@@ -36,11 +61,10 @@ export default function koaServeCustomUiAssets(customUiAssetId: string) {
       experienceBlobsProviderConfig
     );
 
-    const contextPath = `${tenantId}/${customUiAssetId}`;
-    const requestPath = ctx.request.path;
-    const isFileAssetRequest = isFileAssetPath(requestPath);
-
-    const fileObjectKey = `${contextPath}${isFileAssetRequest ? requestPath : '/index.html'}`;
+    const { fileObjectKey, isFileAssetRequest } = resolveAssetObjectKey(
+      `${tenantId}/${customUiAssetId}`,
+      ctx.request.path
+    );
     try {
       const isExisted = await isFileExisted(fileObjectKey, { throwOnTransientError: true });
       assertThat(isExisted, 'entity.not_found', 404);

@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 
 import type { UserAssets } from '@logto/schemas';
 import {
@@ -84,10 +85,16 @@ export default function userAssetsRoutes<T extends ManagementApiRouter>(
           ? storageProviderConfig.isPublic
           : undefined;
       const uploadFile = buildUploadFile(storageProviderConfig);
+      const safeFilename =
+        path
+          .basename(file.originalFilename)
+          .replaceAll(/[^\w.-]/g, '-')
+          .replace(/^\.+/, '')
+          .slice(0, 128) || 'asset';
       const objectKey = `${tenantId}/${userId}/${format(
         new Date(),
         'yyyy/MM/dd'
-      )}/${generateStandardId(8)}/${file.originalFilename}`;
+      )}/${generateStandardId(8)}/${safeFilename}`;
 
       try {
         const { url } = await uploadFile(await readFile(file.filepath), objectKey, {

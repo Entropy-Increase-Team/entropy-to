@@ -443,6 +443,40 @@ describe('account mfa verification routes', () => {
       expect(response.status).toBe(200);
       expect(response.body).toEqual({ codes: usableBackupCode.codes });
     });
+
+    it('rejects reading backup codes when fields.mfa is disabled', async () => {
+      const mfaDisabledRequest = createRequester({
+        middlewares: [koaI18next(), koaErrorHandler()],
+        authedRoutes: [
+          (router) => {
+            router.use(async (ctx, next) => {
+              ctx.auth = {
+                ...ctx.auth,
+                id: mockUser.id,
+                identityVerified: true,
+                scopes: new Set([UserScope.Identities]),
+              };
+              ctx.accountCenter = {
+                enabled: true,
+                fields: {
+                  mfa: AccountCenterControlValue.Off,
+                },
+              };
+              ctx.appendDataHookContext = jest.fn();
+              return next();
+            });
+          },
+          accountMfaRoutes as never,
+        ],
+        tenantContext,
+      });
+
+      const response = await mfaDisabledRequest.get('/my-account/mfa-verifications/backup-codes');
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty('code', 'account_center.field_not_enabled');
+      expect(findUserById).not.toHaveBeenCalled();
+    });
   });
 
   describe('POST /api/my-account/mfa-verifications passkey permission and binding', () => {

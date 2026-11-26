@@ -107,7 +107,8 @@ export default function verificationRoutes<T extends UserRouter>(
 
       const user = await queries.users.findUserById(userId);
       const isNewIdentifier =
-        (identifier.type === SignInIdentifier.Email && identifier.value !== user.primaryEmail) ||
+        (identifier.type === SignInIdentifier.Email &&
+          identifier.value.toLowerCase() !== user.primaryEmail?.toLowerCase()) ||
         (identifier.type === SignInIdentifier.Phone && identifier.value !== user.primaryPhone);
 
       const templateType = isNewIdentifier
@@ -350,7 +351,7 @@ export default function verificationRoutes<T extends UserRouter>(
     }),
     async (ctx, next) => {
       const { verificationRecordId, payload } = ctx.guard.body;
-      const { clientId } = ctx.auth;
+      const { id: userId, clientId } = ctx.auth;
 
       await assertFirstPartyClient(queries, clientId);
 
@@ -359,6 +360,7 @@ export default function verificationRoutes<T extends UserRouter>(
         id: verificationRecordId,
         queries,
         libraries,
+        userId,
       });
       await webAuthnVerification.verifyWebAuthnRegistration(ctx, payload);
       await updateVerificationRecord(webAuthnVerification, queries);

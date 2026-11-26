@@ -195,7 +195,11 @@ const getActionByPayload = (payload: IdentifierPayload): Optional<SentinelActivi
 };
 
 const getUserIdentifier = (payload: IdentifierPayload): Optional<string> => {
-  for (const key of ['username', 'email', 'phone'] as const) {
+  if (isKeyInObject(payload, 'email')) {
+    return String(payload.email).toLowerCase();
+  }
+
+  for (const key of ['username', 'phone'] as const) {
     if (isKeyInObject(payload, key)) {
       return String(payload[key]);
     }

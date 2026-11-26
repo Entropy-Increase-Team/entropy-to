@@ -124,7 +124,8 @@ abstract class BaseWebAuthnVerification {
     const { verified, registrationInfo } = await verifyWebAuthnRegistration(
       payload,
       this.registrationChallenge,
-      [origin, ...webauthnRelatedOrigins]
+      [origin, ...webauthnRelatedOrigins],
+      this.registrationRpId
     );
 
     assertThat(verified, 'session.mfa.webauthn_verification_failed');

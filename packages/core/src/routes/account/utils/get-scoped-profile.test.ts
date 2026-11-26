@@ -1,7 +1,45 @@
 import { UserScope } from '@logto/core-kit';
 import { AccountCenterControlValue, type AccountCenter } from '@logto/schemas';
 
-import { getAccountCenterFilteredProfile } from './get-scoped-profile.js';
+import { mockUser } from '#src/__mocks__/user.js';
+import type Libraries from '#src/tenants/Libraries.js';
+import type Queries from '#src/tenants/Queries.js';
+
+import { getAccountCenterFilteredProfile, getScopedProfile } from './get-scoped-profile.js';
+
+const { jest } = import.meta;
+
+describe('getScopedProfile', () => {
+  it('assigns ssoIdentities under the ssoIdentities property rather than spreading array indices', async () => {
+    const mockSsoIdentity = {
+      tenantId: 'default',
+      id: 'sso-id-1',
+      userId: mockUser.id,
+      issuer: 'https://idp.example.com',
+      identityId: 'ext-1',
+      detail: {},
+      createdAt: 0,
+      ssoConnectorId: 'connector-1',
+      updatedAt: 0,
+    };
+    const queries = {
+      users: { findUserById: jest.fn(async () => mockUser) },
+    } as unknown as Queries;
+    const libraries = {
+      users: { findUserSsoIdentities: jest.fn(async () => [mockSsoIdentity]) },
+    } as unknown as Libraries;
+
+    const { profile } = await getScopedProfile(
+      queries,
+      libraries,
+      new Set([UserScope.Identities]),
+      mockUser.id
+    );
+
+    expect(profile.ssoIdentities).toEqual([mockSsoIdentity]);
+    expect(profile).not.toHaveProperty('0');
+  });
+});
 
 describe('getAccountCenterFilteredProfile', () => {
   const accountCenter: AccountCenter = {

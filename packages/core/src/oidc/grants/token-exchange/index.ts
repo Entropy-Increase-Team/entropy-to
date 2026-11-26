@@ -257,16 +257,15 @@ export const buildHandler: Handler = (envSet, queries, appAccess) => async (ctx)
     };
   }
 
+  if (subjectTokenId) {
+    const consumed = await queries.subjectTokens.consumeSubjectToken(subjectTokenId);
+    assertThat(consumed, new InvalidGrant('subject token is already consumed'));
+  }
+
   await grant.save();
   ctx.oidc.entity('Grant', grant);
   ctx.oidc.entity('AccessToken', accessToken);
   const accessTokenString = await accessToken.save();
-
-  if (subjectTokenId) {
-    await queries.subjectTokens.updateSubjectTokenById(subjectTokenId, {
-      consumedAt: Date.now(),
-    });
-  }
 
   ctx.body = {
     access_token: accessTokenString,

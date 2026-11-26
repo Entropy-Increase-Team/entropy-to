@@ -64,6 +64,7 @@ describe('url utilities', () => {
     expect(parseRange('bytes=0-499')).toEqual({ start: 0, end: 499, count: 500 });
     expect(parseRange('bytes=0-')).toEqual({ start: 0, end: undefined, count: undefined });
     expect(() => parseRange('invalid')).toThrowError('Range not satisfiable.');
+    expect(() => parseRange('bytes=100-50')).toThrowError('Range not satisfiable.');
   });
 
   it('should be able to check if a request path is file asset', () => {
