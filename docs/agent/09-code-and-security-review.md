@@ -161,3 +161,32 @@
    - `envSet.load()` 在 `createPoolByEnv` 成功后若后续加载步骤抛错，未调用 `envSet.end()` 释放连接池；域名多租户下 `getTenantId` 先查 `domains` 表再匹配默认 `*.domain` 子域名，而未命中的域名不写缓存且 `domains` 表所有索引均以 `tenant_id` 开头，导致每次普通子域名请求都在 `sharedPool` 上执行顺序扫描（应先匹配 `*.domain` 并补充 `ON domains (domain) WHERE status = 'Active'` 部分索引）。
 3. **[L-03] 跨平台与表主键一致性细节**（`packages/cli/src/connector/loader.ts:45, 51`、`middleware/koa-console-redirect-proxy.ts:20, 25`、`tables/oidc_model_instances.sql:19-21`）：
    - `loader.ts` 在 Windows 下缺少 `pathToFileURL` 导致绝对路径 ESM `import()` 报错；`koaConsoleRedirectProxy` 使用 `path.join` 在 Windows 下生成反斜杠重定向；`oidc_model_instances` 主键为全局 `(id)` 而 `upsertInstance` 冲突目标为 `(tenant_id, model_name, id)`，建议统一主键粒度并按需为 Secret Vault AES-GCM 绑定 `(tenantId, userId)` AAD。
+
+---
+
+## 五、首批安全加固与缺陷修复落地台账
+
+以下高优与核心漏洞/缺陷已在仓库当前分支中完成修复并通过单元测试与类型/规范校验：
+
+| 审计编号 | 修复状态 | 落地要点 |
+| --- | --- | --- |
+| **C-01** | **已修复**（首阶段） | `GET /api/authn/hasura` 在未提供 `unauthorizedRole` 且验签无 `sub` 时强制返回 `401 auth.unauthorized`，消除空凭证 `200 OK` 绕过 |
+| **C-02** | **已修复** | `koaServeCustomUiAssets` 解码并拦截 `\0`/`\`/`..` 路径段与跨目录逃逸，修正 `max-age=604800`；`@logto/core-kit` `parseRange` 拦截 `end < start` 返回 `416` |
+| **C-03** | **已修复** | `connector-kakao` 增加 `is_email_verified` Schema 校验并要求 `is_email_valid && is_email_verified` 方可信任邮箱 |
+| **C-04** | **已修复**（核心项） | `connector-saml` 增加 `<saml:Audience>` 精确匹配 `entityID` 并校验 `XMLValidator.validate() !== true`；`SamlConnector/index.ts` 同步检查 `XMLValidator.validate()` 返回值 |
+| **C-05** | **已修复**（Mailgun） | `connector-mailgun` 强制校验 `URL.protocol === 'https:'`、`hostname` 归属 `mailgun.net` 且 `domain` 不含路径遍历 |
+| **H-01** | **已修复** | `buildLoginPromptUrl` 严格校验 `direct_sign_in` 段字符集并移除 `node:path` 反斜杠拼接，阻断开放重定向并修复 Windows 兼容性 |
+| **H-03** | **已修复**（会话清理） | `@logto/experience` 在发起 Web 社交登录前主动清理残留 `social_callback_data:<connectorId>` |
+| **H-04** | **已修复**（URL 协议） | `PATCH /api/sign-in-exp` 强制校验外部 URL 字段仅允许 `http:` / `https:` 协议，拦截 `javascript:` 存储型 XSS |
+| **H-06** | **已修复** | `logto-configs` 按 `mfa` 与 `passkeySignIn` 独立校验 `fields.mfa` / `fields.passkey` 编辑权限；`GET .../backup-codes` 补齐 `fields.mfa` 可读校验与 OpenAPI 400 响应声明 |
+| **H-08** | **已修复**（RP ID & 归属） | `verifyWebAuthnRegistration` 透传 `expectedRPID`；`buildVerificationRecordByIdAndType` 支持并强制校验当前登录 `userId` |
+| **H-09** | **已修复**（路径净化） | `/api/user-assets` 与 `/me/user-assets` 对 `originalFilename` 执行 `path.basename` 与安全字符集清洗，阻断存储路径遍历 |
+| **H-11** | **已修复**（邮箱归一化） | 旧版 `/api/interaction` 在上报 Sentinel 前对邮箱统一转小写，消除大小写排列防爆破绕过 |
+| **H-13** | **已修复** | `RedisCache` / `RedisClusterCache` 默认开启 `rejectUnauthorized: true`（支持显式参数关闭），集群 `rootNodes` 保留 `rediss://` 协议 |
+| **H-15** | **已修复**（Nonce & CLI） | `connector-apple`、`connector-oidc` 与 `sso/OidcConnector` 在会话存在 `nonce` 时强制要求 `id_token` 携带匹配 `nonce`；`@logto/cli` 改用 `execFile` + 包名白名单正则 + 子目录围栏校验 |
+| **M-01** | **已修复** | Token Exchange 新增原子 `consumeSubjectToken`（`WHERE consumed_at IS NULL`）阻断并发重放；`consumeInstanceById` 对旋转 Refresh Token 使用 `COALESCE(consumed_at, now())` 杜绝无限滑动续命 |
+| **M-04** | **已修复** | `getScopedProfile` 修正为 `...conditional(ssoIdentities && { ssoIdentities })`，恢复个人中心 `ssoIdentities` 返回 |
+| **M-05** | **已修复**（邮箱大小写） | `POST /api/verifications/verification-code` 改用不区分大小写比对 `user.primaryEmail` |
+| **M-08** | **已修复** | 云片连接器脱敏未知错误日志；腾讯云/阿里云短信连接器剔除 `uiLocales` 与非原始类型对象并支持通用模板回退；`connector-linkedin` 与 `connector-slack` 修正 `avatar` 字段名 |
+| **M-09** | **已修复** | `@logto/tunnel` 修复 JSON 数组响应重写、`finally` 句柄关闭、非 GET/HEAD 返回 `405`、带参路径 MIME 与 `/consent` 识别、`deploy --verbose` 令牌脱敏；`@logto/cli` 拦截空字符串/非法回滚时间戳 |
+| **L-03** | **已修复** | `@logto/cli` `loadConnector` 使用 `pathToFileURL` 修复 Windows ESM 动态导入；`koaConsoleRedirectProxy` 改用 `path.posix.join` |

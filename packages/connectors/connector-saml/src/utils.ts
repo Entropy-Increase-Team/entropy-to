@@ -77,15 +77,15 @@ export const samlAssertionHandler = async (
   // Used to check whether xml content is valid in format.
   saml.setSchemaValidator({
     validate: async (xmlContent: string) => {
-      try {
-        XMLValidator.validate(xmlContent, {
-          allowBooleanAttributes: true,
-        });
+      const validationResult = XMLValidator.validate(xmlContent, {
+        allowBooleanAttributes: true,
+      });
 
-        return true;
-      } catch {
-        return false;
+      if (validationResult !== true) {
+        throw new Error(validationResult.err.msg);
       }
+
+      return true;
     },
   });
 
@@ -95,6 +95,11 @@ export const samlAssertionHandler = async (
       'post',
       request
     );
+
+    const audiences: unknown[] = [assertionResult.extract.audience ?? []].flat();
+    if (!audiences.includes(entityID)) {
+      throw new Error('SAML assertion audience does not match the SP entity ID.');
+    }
 
     await setSession({
       extractedRawProfile: {

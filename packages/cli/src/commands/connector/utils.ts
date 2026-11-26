@@ -1,4 +1,4 @@
-import { exec } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -20,7 +20,13 @@ import {
   oraPromise,
 } from '../../utils.js';
 
-const execPromise = promisify(exec);
+const execFilePromise = promisify(execFile);
+const validNpmPackageSpecRegex = /^(?:@[\da-z~-][\w.~-]*\/)?[\da-z~-][\w.~-]*(?:@[\w+.-]+)?$/i;
+
+const isSubPath = (parentDirectory: string, targetPath: string) => {
+  const relativePath = path.relative(parentDirectory, targetPath);
+  return Boolean(relativePath) && !relativePath.startsWith('..') && !path.isAbsolute(relativePath);
+};
 export const npmPackResultGuard = z
   .object({
     name: z.string(),
@@ -86,7 +92,18 @@ export const addConnectorsToPath = async (cwd: string, packageNames: string[]) =
       .map((name) => normalizePackageName(name))
       .map(async (packageName) => {
         const run = async () => {
-          const { stdout } = await execPromise(`npm pack ${packageName} --json`, { cwd });
+          if (!validNpmPackageSpecRegex.test(packageName)) {
+            throw new Error(`Invalid connector package specifier: ${packageName}`);
+          }
+
+          const resolvedCwd = path.resolve(cwd);
+          const npmExecutable = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+          const { stdout } = await execFilePromise(npmExecutable, ['pack', packageName, '--json'], {
+            cwd: resolvedCwd,
+            // Windows `.cmd` shims require `cmd.exe` on Node >= 20.12.22; `validNpmPackageSpecRegex`
+            // strictly rejects all shell metacharacters and leading `-` flags before invocation.
+            shell: process.platform === 'win32',
+          });
           const result = npmPackResultGuard.parse(JSON.parse(stdout));
 
           if (!result[0]) {
@@ -97,8 +114,12 @@ export const addConnectorsToPath = async (cwd: string, packageNames: string[]) =
 
           const { filename, name, version } = result[0];
           const escapedFilename = filename.replaceAll('/', '-').replaceAll('@', '');
-          const tarPath = path.join(cwd, escapedFilename);
-          const packageDirectory = path.join(cwd, name.replaceAll('/', '-'));
+          const tarPath = path.resolve(resolvedCwd, escapedFilename);
+          const packageDirectory = path.resolve(resolvedCwd, name.replaceAll('/', '-'));
+
+          if (!isSubPath(resolvedCwd, tarPath) || !isSubPath(resolvedCwd, packageDirectory)) {
+            throw new Error(`Resolved connector path escapes target directory: ${name}`);
+          }
 
           await fs.rm(packageDirectory, { force: true, recursive: true });
           await fs.mkdir(packageDirectory, { recursive: true });

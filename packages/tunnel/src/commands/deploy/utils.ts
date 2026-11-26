@@ -86,7 +86,9 @@ export const deployToLogtoCloud = async ({
     if (verbose) {
       spinner.succeed('[2/4] Exchanging access token... Done.');
       spinner.succeed(
-        `Token exchange response:\n${chalk.gray(JSON.stringify(tokenResponse, undefined, 2))}`
+        `Token exchange response:\n${chalk.gray(
+          JSON.stringify({ ...tokenResponse, access_token: '[REDACTED]' }, undefined, 2)
+        )}`
       );
       spinner.start('[3/4] Uploading zip...');
     }

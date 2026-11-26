@@ -94,8 +94,13 @@ const sendMessage =
     // Validate and parse phone number as mainland China number
     const nationalNumber = parseMainlandChinaPhoneNumber(to);
 
-    // Remove locale from payload as it's not needed for MAS API
-    const { locale, ...filteredPayload } = payload;
+    // Remove locale/uiLocales and non-primitive context objects not accepted by MAS API
+    const { locale, uiLocales, ...restPayload } = payload;
+    const filteredPayload = Object.fromEntries(
+      Object.entries(restPayload).filter(
+        ([, value]) => typeof value === 'string' || typeof value === 'number'
+      )
+    );
 
     // Logto uses fixed 10-minute expiration time
     // min parameter is used in template: "您的验证码是${code}，有效期${min}分钟，请勿告诉他人。"

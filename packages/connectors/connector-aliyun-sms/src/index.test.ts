@@ -25,7 +25,12 @@ describe('sendMessage()', () => {
     await connector.sendMessage({
       to: phoneTest,
       type: TemplateType.SignIn,
-      payload: { code: codeTest, locale: 'zh-CN' },
+      payload: {
+        code: codeTest,
+        locale: 'zh-CN',
+        uiLocales: 'zh-CN en',
+        application: { name: 'Demo' },
+      },
     });
     expect(sendSms).toHaveBeenCalledWith(
       expect.objectContaining({

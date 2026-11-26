@@ -81,6 +81,7 @@ describe('kakao connector', () => {
         id: 1_234_567_890,
         kakao_account: {
           is_email_valid: true,
+          is_email_verified: true,
           email: 'ruddbs5302@gmail.com',
           profile: {
             nickname: 'pemassi',
@@ -105,6 +106,27 @@ describe('kakao connector', () => {
         email: 'ruddbs5302@gmail.com',
         rawData: jsonResponse,
       });
+    });
+
+    it('should omit email if is_email_verified is not true', async () => {
+      const jsonResponse = Object.freeze({
+        id: 1_234_567_890,
+        kakao_account: {
+          is_email_valid: true,
+          is_email_verified: false,
+          email: 'unverified@gmail.com',
+        },
+      });
+      nock(userInfoEndpoint).post('').reply(200, jsonResponse);
+      const connector = await createConnector({ getConfig });
+      const socialUserInfo = await connector.getUserInfo(
+        {
+          code: 'code',
+          redirectUri: 'redirectUri',
+        },
+        vi.fn()
+      );
+      expect(socialUserInfo.email).toBeUndefined();
     });
 
     it('throws SocialAccessTokenInvalid error if remote response code is 401', async () => {

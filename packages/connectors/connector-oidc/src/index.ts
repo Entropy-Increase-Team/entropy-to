@@ -116,8 +116,7 @@ const parseUserInfoFromIdToken = async (
       nonce,
     } = result.data;
 
-    if (nonce) {
-      // TODO @darcy: need to specify error code
+    if (Boolean(validationNonce) || Boolean(nonce)) {
       assert(
         validationNonce,
         new ConnectorError(ConnectorErrorCodes.General, {

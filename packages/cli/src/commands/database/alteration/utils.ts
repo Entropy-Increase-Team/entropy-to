@@ -97,12 +97,18 @@ export const getAlterationFiles = async (): Promise<AlterationFile[]> => {
 };
 
 export const chooseRevertAlterationsByTimestamp = async (target: string) => {
-  const files = await getAlterationFiles();
-  const targetTimestamp = Number(target);
-
-  if (Number.isNaN(targetTimestamp)) {
-    return [];
+  const trimmedTarget = target.trim();
+  if (!trimmedTarget) {
+    throw new Error('Invalid target timestamp: empty value.');
   }
+
+  const targetTimestamp = Number(trimmedTarget);
+
+  if (Number.isNaN(targetTimestamp) || targetTimestamp < 0) {
+    throw new Error(`Invalid target timestamp: ${target}`);
+  }
+
+  const files = await getAlterationFiles();
 
   return files.filter(({ filename }) => getTimestampFromFilename(filename) > targetTimestamp);
 };

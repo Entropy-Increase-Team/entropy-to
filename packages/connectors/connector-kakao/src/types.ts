@@ -20,6 +20,7 @@ export const userInfoResponseGuard = z.object({
   kakao_account: z
     .object({
       is_email_valid: z.boolean().optional(),
+      is_email_verified: z.boolean().optional(),
       email: z.string().optional(),
       profile: z
         .object({

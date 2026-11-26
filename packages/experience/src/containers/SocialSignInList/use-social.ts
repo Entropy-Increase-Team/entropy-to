@@ -31,7 +31,12 @@ import useToast from '@/hooks/use-toast';
 import { searchKeys } from '@/shared/utils/search-parameters';
 import { SearchParameters } from '@/types';
 import { getLogtoNativeSdk, isNativeWebview } from '@/utils/native-sdk';
-import { generateState, storeState, buildSocialLandingUri } from '@/utils/social-connectors';
+import {
+  generateState,
+  storeState,
+  buildSocialLandingUri,
+  removeCallbackLinkFromStorage,
+} from '@/utils/social-connectors';
 import { storeRedirectContext } from '@/utils/social-redirect-fallback-context';
 import {
   discoverEvmWallets,
@@ -302,7 +307,8 @@ const useSocial = () => {
         return;
       }
 
-      // Invoke web social sign-in flow
+      // Invoke web social sign-in flow (clear any stale native callback deep link first)
+      removeCallbackLinkFromStorage(connectorId);
       await redirectTo(authorizationUri);
     },
     [
