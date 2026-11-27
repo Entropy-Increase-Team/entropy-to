@@ -186,7 +186,11 @@ export default function connectorRoutes<T extends ManagementApiRouter>(
           {
             id: insertConnectorId,
             connectorId,
-            ...cleanDeep({ syncProfile, config, metadata, enableTokenStorage }),
+            ...cleanDeep({ syncProfile, metadata, enableTokenStorage }),
+            ...conditional(
+              // eslint-disable-next-line no-restricted-syntax -- cleanDeep preserves JsonObject structure when emptyObjects is false
+              config && { config: cleanDeep(config, { emptyObjects: false }) as JsonObject }
+            ),
           },
           connectorIdsOfSameType
         );
@@ -200,7 +204,11 @@ export default function connectorRoutes<T extends ManagementApiRouter>(
         await insertConnector({
           id: insertConnectorId,
           connectorId,
-          ...cleanDeep({ syncProfile, config, metadata, enableTokenStorage }),
+          ...cleanDeep({ syncProfile, metadata, enableTokenStorage }),
+          ...conditional(
+            // eslint-disable-next-line no-restricted-syntax -- cleanDeep preserves JsonObject structure when emptyObjects is false
+            config && { config: cleanDeep(config, { emptyObjects: false }) as JsonObject }
+          ),
         });
 
         captureEvent(
@@ -356,8 +364,8 @@ export default function connectorRoutes<T extends ManagementApiRouter>(
            * drops all keys with undefined values, the return type of `Partial<JsonObject>` is still `JsonObject`.
            * The type inference failed to infer this, manually assign type `JsonObject`.
            */
-          // eslint-disable-next-line no-restricted-syntax
-          config: conditional(config && (cleanDeep(config) as JsonObject)),
+          // eslint-disable-next-line no-restricted-syntax -- cleanDeep preserves JsonObject structure when emptyObjects is false
+          config: conditional(config && (cleanDeep(config, { emptyObjects: false }) as JsonObject)),
           metadata: conditional(metadata && cleanDeep(metadata)),
           syncProfile,
           enableTokenStorage,

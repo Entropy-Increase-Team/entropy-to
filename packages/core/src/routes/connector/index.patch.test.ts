@@ -319,5 +319,35 @@ describe('connector data routes', () => {
       );
       expect(response).toHaveProperty('statusCode', 200);
     });
+
+    it('preserves empty nested objects such as auth: {} when updating SMTP connector config', async () => {
+      getLogtoConnectors.mockResolvedValue([
+        {
+          dbEntry: mockConnector,
+          metadata: mockMetadata,
+          type: ConnectorType.Email,
+          ...mockLogtoConnector,
+        },
+      ]);
+      updateConnector.mockResolvedValueOnce({
+        ...mockConnector,
+        config: { host: 'smtp.example.com', port: 25, auth: {} },
+      });
+
+      const response = await connectorRequest.patch('/connectors/id').send({
+        config: { host: 'smtp.example.com', port: 25, auth: {}, replyTo: '' },
+      });
+
+      expect(response).toHaveProperty('statusCode', 200);
+      expect(updateConnector).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'id' },
+          set: {
+            config: { host: 'smtp.example.com', port: 25, auth: {} },
+          },
+          jsonbMode: 'replace',
+        })
+      );
+    });
   });
 });

@@ -45,5 +45,12 @@ export const getAccountCenterInternalRoute = (
     return;
   }
 
-  return `${pathname.slice(accountCenterBasePath.length) || '/'}${search}${hash}`;
+  const relativePathname = pathname.slice(accountCenterBasePath.length) || '/';
+
+  // Reject protocol-relative (`//`) or backslash (`\`) paths before passing to react-router navigate().
+  if (relativePathname.startsWith('//') || relativePathname.includes('\\')) {
+    return;
+  }
+
+  return `${relativePathname}${search}${hash}`;
 };
