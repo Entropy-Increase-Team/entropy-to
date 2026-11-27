@@ -2,7 +2,7 @@ import type { ParameterizedContext } from 'koa';
 
 import createMockContext from '#src/test-utils/jest-koa-mocks/create-mock-context.js';
 
-import { getExperienceLanguage } from './i18n.js';
+import { getExperienceLanguage, i18next } from './i18n.js';
 
 const baseLanguageInfo = {
   autoDetect: true,
@@ -108,5 +108,26 @@ describe('getExperienceLanguage', () => {
     });
 
     expect(language).toBe('en');
+  });
+});
+
+describe('i18next CVE-2026-63402 deepExtend prototype guard', () => {
+  it('does not recurse into inherited Object.prototype properties during addResourceBundle', async () => {
+    const instance = i18next.createInstance();
+    await instance.init({ lng: 'en', resources: { en: { custom: { existing: 'ok' } } } });
+
+    instance.addResourceBundle(
+      'en',
+      'custom',
+      {
+        hasOwnProperty: { polluted: 'yes' },
+        toString: { polluted: 'yes' },
+      },
+      true,
+      true
+    );
+
+    expect(Reflect.get(Object.prototype.hasOwnProperty, 'polluted')).toBeUndefined();
+    expect(Reflect.get(Object.prototype.toString, 'polluted')).toBeUndefined();
   });
 });

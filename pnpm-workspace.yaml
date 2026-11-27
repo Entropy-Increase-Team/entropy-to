@@ -98,3 +98,6 @@ minimumReleaseAgeExclude:
   - "@logto/*"
   - "@silverhand/*"
   - "@withtyped/*"
+
+patchedDependencies:
+  i18next@22.4.15: patches/i18next@22.4.15.patch

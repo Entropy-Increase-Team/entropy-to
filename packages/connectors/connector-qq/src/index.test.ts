@@ -63,6 +63,43 @@ describe('getAuthorizationUri', () => {
     );
     expect(setSession).toHaveBeenCalledWith({ redirectUri: 'http://localhost:3000/callback' });
   });
+
+  it('should append display=mobile for mobile user agents and omit it for desktop', async () => {
+    const connector = await createConnector({ getConfig });
+    const setSession = vi.fn();
+
+    const mobileUri = await connector.getAuthorizationUri(
+      {
+        state: 'some_state',
+        redirectUri: 'http://localhost:3000/callback',
+        connectorId: 'connector_id',
+        connectorFactoryId: 'connector_factory_id',
+        jti: 'some_jti',
+        headers: {
+          userAgent:
+            'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+        },
+      },
+      setSession
+    );
+    expect(new URL(mobileUri).searchParams.get('display')).toBe('mobile');
+
+    const desktopUri = await connector.getAuthorizationUri(
+      {
+        state: 'some_state',
+        redirectUri: 'http://localhost:3000/callback',
+        connectorId: 'connector_id',
+        connectorFactoryId: 'connector_factory_id',
+        jti: 'some_jti',
+        headers: {
+          userAgent:
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        },
+      },
+      setSession
+    );
+    expect(new URL(desktopUri).searchParams.get('display')).toBeNull();
+  });
 });
 
 describe('getAccessToken', () => {

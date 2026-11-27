@@ -62,6 +62,9 @@ const authorizationCallbackHandler = async (parameterObject: unknown) => {
   return result.data;
 };
 
+const isMobileUserAgent = (userAgent?: string) =>
+  Boolean(userAgent && /mobile|android|iphone|ipad|ipod|windows phone|harmonyos/i.test(userAgent));
+
 /**
  * Creates the authorization URI used to redirect the user to the QQ login page.
  *
@@ -71,7 +74,7 @@ const authorizationCallbackHandler = async (parameterObject: unknown) => {
  */
 const getAuthorizationUri =
   (getConfig: GetConnectorConfig): GetAuthorizationUri =>
-  async ({ state, redirectUri, scope: customScope }, setSession) => {
+  async ({ state, redirectUri, scope: customScope, headers: { userAgent } }, setSession) => {
     const config = await getConfig(defaultMetadata.id);
     validateConfig(config, qqConfigGuard);
 
@@ -84,6 +87,7 @@ const getAuthorizationUri =
       redirect_uri: redirectUri,
       state,
       scope: customScope ?? scope ?? 'get_user_info',
+      ...(isMobileUserAgent(userAgent) && { display: 'mobile' }),
     });
 
     return `${authorizationEndpoint}?${queryParameters.toString()}`;

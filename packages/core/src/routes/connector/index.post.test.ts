@@ -338,5 +338,38 @@ describe('connector data route', () => {
       });
       expect(response).toHaveProperty('statusCode', 422);
     });
+
+    it('preserves empty nested objects such as auth: {} in passwordless connector config', async () => {
+      loadConnectorFactories.mockResolvedValueOnce([
+        {
+          ...mockConnectorFactory,
+          type: ConnectorType.Email,
+          metadata: { ...mockConnectorFactory.metadata, id: 'smtp-id' },
+        },
+      ]);
+      validateConfig.mockReturnValueOnce(null);
+      buildRawConnector.mockResolvedValueOnce({ rawConnector: { configGuard: any() } });
+      getLogtoConnectors.mockResolvedValueOnce([
+        {
+          dbEntry: { ...mockConnector, connectorId: 'smtp-id' },
+          metadata: { ...mockMetadata, id: 'smtp-id' },
+          type: ConnectorType.Email,
+          ...mockLogtoConnector,
+        },
+      ]);
+
+      await connectorRequest.post('/connectors').send({
+        connectorId: 'smtp-id',
+        config: { host: 'smtp.example.com', port: 25, auth: {}, replyTo: '' },
+      });
+
+      expect(replaceConnectorsByType).toHaveBeenCalledWith(
+        expect.objectContaining({
+          connectorId: 'smtp-id',
+          config: { host: 'smtp.example.com', port: 25, auth: {} },
+        }),
+        ['smtp-id']
+      );
+    });
   });
 });

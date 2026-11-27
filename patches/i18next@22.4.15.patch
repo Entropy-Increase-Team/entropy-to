@@ -1,0 +1,40 @@
+diff --git a/dist/cjs/i18next.js b/dist/cjs/i18next.js
+index fbd74bb539aab004fa2b1e7e0f2a3697db6ba034..9258a4326f9d51e6dcee01df97f68740e2025b8f 100644
+--- a/dist/cjs/i18next.js
++++ b/dist/cjs/i18next.js
+@@ -242,7 +242,7 @@ function getPathWithDefaults(data, defaultData, key) {
+ function deepExtend(target, source, overwrite) {
+   for (var prop in source) {
+     if (prop !== '__proto__' && prop !== 'constructor') {
+-      if (prop in target) {
++      if (Object.prototype.hasOwnProperty.call(target, prop)) {
+         if (typeof target[prop] === 'string' || target[prop] instanceof String || typeof source[prop] === 'string' || source[prop] instanceof String) {
+           if (overwrite) target[prop] = source[prop];
+         } else {
+diff --git a/dist/esm/i18next.js b/dist/esm/i18next.js
+index 72c2e4101e4420c723278981513ee6ec6104bd28..4d89a33f8a689ddd4fa3245b462c9e3f74c1cc35 100644
+--- a/dist/esm/i18next.js
++++ b/dist/esm/i18next.js
+@@ -228,7 +228,7 @@ function getPathWithDefaults(data, defaultData, key) {
+ function deepExtend(target, source, overwrite) {
+   for (var prop in source) {
+     if (prop !== '__proto__' && prop !== 'constructor') {
+-      if (prop in target) {
++      if (Object.prototype.hasOwnProperty.call(target, prop)) {
+         if (typeof target[prop] === 'string' || target[prop] instanceof String || typeof source[prop] === 'string' || source[prop] instanceof String) {
+           if (overwrite) target[prop] = source[prop];
+         } else {
+diff --git a/i18next.js b/i18next.js
+index 9e315262732894a54e515e18a79b2472a8f7b01a..aa303172b67d57363137f769256a9fd4555f0498 100644
+--- a/i18next.js
++++ b/i18next.js
+@@ -336,8 +336,7 @@
+   }
+   function deepExtend(target, source, overwrite) {
+     for (var prop in source) {
+-      if (prop !== '__proto__' && prop !== 'constructor') {
+-        if (prop in target) {
++       (Object.prototype.hasOwnProperty.call(target, prop)) {
+           if (typeof target[prop] === 'string' || target[prop] instanceof String || typeof source[prop] === 'string' || source[prop] instanceof String) {
+             if (overwrite) target[prop] = source[prop];
+           } else {

@@ -30,4 +30,10 @@ describe('getAccountCenterInternalRoute', () => {
     expect(getAccountCenterInternalRoute('http://[', origin)).toBeUndefined();
     expect(getAccountCenterInternalRoute('/account/security', 'not-a-url')).toBeUndefined();
   });
+
+  it('rejects protocol-relative or backslash-prefixed subpaths after stripping /account', () => {
+    expect(getAccountCenterInternalRoute(`${origin}/account//evil.com`, origin)).toBeUndefined();
+    expect(getAccountCenterInternalRoute(`${origin}/account/\\evil.com`, origin)).toBeUndefined();
+    expect(getAccountCenterInternalRoute('/account//evil.com', origin)).toBeUndefined();
+  });
 });
