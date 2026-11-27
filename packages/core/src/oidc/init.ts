@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import querystring from 'node:querystring';
 
 import { logtoGoogleOneTapCookieKey } from '@logto/connector-kit';
-import { userClaims } from '@logto/core-kit';
+import { ReservedResource, UserScope, userClaims } from '@logto/core-kit';
 import type { I18nKey } from '@logto/phrases';
 import {
   customClientMetadataDefault,
@@ -16,7 +16,7 @@ import {
   ExtraParamsKey,
   type Json,
 } from '@logto/schemas';
-import { conditional, trySafe } from '@silverhand/essentials';
+import { conditional, deduplicateByKey, trySafe } from '@silverhand/essentials';
 import { NotFoundError } from '@silverhand/slonik';
 import { type i18n } from 'i18next';
 import { type KoaContextWithOIDC, Provider, type ResourceServer, errors } from 'oidc-provider';
@@ -79,6 +79,7 @@ import {
   findResource,
   findResourceScopes,
   getSharedResourceServerData,
+  isReservedResource,
   isThirdPartyApplication,
   filterResourceScopesForTheThirdPartyApplication,
 } from './resource.js';
@@ -90,6 +91,18 @@ const supportedSigningAlgs = Object.freeze(['RS256', 'PS256', 'ES256', 'ES384', 
 // Routes where findAccount loads the browser session's account without rotating the session ID, so
 // destroying the session removes its stored row. `resume` and `device_resume` rotate it first.
 const sessionAccountRoutes = new Set(['authorization', 'code_verification']);
+
+// Consent / authorization-stage routes where no single target organization is selected yet.
+// All other routes fail closed into isolated token-route scope resolution for third-party and
+// CIMD clients (including `pushed_authorization_request` and `device_authorization`, which call
+// `getResourceServerInfo` via `checkResource` solely to validate resource indicators without
+// persisting resource scopes).
+export const consentAuthorizationRoutes: ReadonlySet<string> = new Set([
+  'authorization',
+  'resume',
+  'code_verification',
+  'device_resume',
+]);
 
 export default function initOidc(
   tenantId: string,
@@ -114,12 +127,148 @@ export default function initOidc(
     overwrite: true,
   } as const);
 
-  const getResourceServerInfoCore = async (
+  const findPersonalApiScopes = async (clientId: string, userId: string, indicator: string) => {
+    const scopes = await libraries.users.findUserScopesForResourceIndicator(userId, indicator);
+    const personalOnly = { includeOrganizationResourceScopes: false };
+
+    return shouldTreatAsCimdClient(envSet, clientId)
+      ? filterResourceScopesForTheCimdClient(queries, indicator, scopes, personalOnly)
+      : filterResourceScopesForTheThirdPartyApplication(
+          libraries,
+          clientId,
+          indicator,
+          scopes,
+          personalOnly
+        );
+  };
+
+  const findOrganizationApiScopes = async (
+    clientId: string,
+    userId: string,
     indicator: string,
-    clientId: string | undefined,
-    userId: string | undefined,
-    organizationId: string | undefined
-  ): Promise<Pick<ResourceServer, 'accessTokenFormat' | 'jwt' | 'accessTokenTTL' | 'scope'>> => {
+    organizationId?: string | readonly string[]
+  ) => {
+    const scopes = await queries.organizations.relations.usersRoles.getUserResourceScopes(
+      userId,
+      indicator,
+      organizationId
+    );
+    const organizationOnly = { includeResourceScopes: false };
+
+    return shouldTreatAsCimdClient(envSet, clientId)
+      ? filterResourceScopesForTheCimdClient(queries, indicator, scopes, organizationOnly)
+      : filterResourceScopesForTheThirdPartyApplication(
+          libraries,
+          clientId,
+          indicator,
+          scopes,
+          organizationOnly
+        );
+  };
+
+  const findIsolatedTokenRouteScopes = async ({
+    clientId,
+    userId,
+    indicator,
+    organizationId,
+  }: {
+    clientId: string;
+    userId: string | undefined;
+    indicator: string;
+    organizationId: string | undefined;
+  }) => {
+    if (indicator === ReservedResource.Organization || !userId) {
+      return [];
+    }
+
+    return organizationId
+      ? findOrganizationApiScopes(clientId, userId, indicator, organizationId)
+      : findPersonalApiScopes(clientId, userId, indicator);
+  };
+
+  const shouldRestrictToConsentedOrganizations = async ({
+    treatAsCimdClient,
+    hasConsentResult,
+    existingGrantId,
+  }: {
+    treatAsCimdClient: boolean;
+    hasConsentResult: boolean;
+    existingGrantId: string | undefined;
+  }) => {
+    if (treatAsCimdClient) {
+      return false;
+    }
+
+    if (hasConsentResult) {
+      return true;
+    }
+
+    if (!existingGrantId) {
+      return false;
+    }
+
+    const grant = await oidc.Grant.find(existingGrantId);
+    return Boolean(grant?.getOIDCScope().split(' ').includes(UserScope.Organizations));
+  };
+
+  /**
+   * Resolve consent/authorization-stage API scopes for third-party and CIMD clients as
+   * `(globalRoles ∩ personalConfig) ∪ (orgRoles(organizationId) ∩ orgConfig)`.
+   * When `restrictToConsentedOrganizations` is true (registered apps on post-consent resume or
+   * repeat auth whose Grant already holds `UserScope.Organizations`), narrow org roles to
+   * consented orgs so unconsented orgs cannot re-trigger consent without permanently rejecting
+   * scopes on a long-lived Grant.
+   */
+  const findConsentStageApiScopes = async ({
+    clientId,
+    userId,
+    indicator,
+    organizationId,
+    restrictToConsentedOrganizations,
+  }: {
+    clientId: string;
+    userId: string | undefined;
+    indicator: string;
+    organizationId: string | undefined;
+    restrictToConsentedOrganizations: boolean;
+  }) => {
+    if (!userId) {
+      return [];
+    }
+
+    const targetOrganizations = restrictToConsentedOrganizations
+      ? await queries.applications.userConsentOrganizations.findOrganizationIds(
+          clientId,
+          userId,
+          organizationId
+        )
+      : organizationId;
+
+    const [personalScopes, organizationScopes] = await Promise.all([
+      findPersonalApiScopes(clientId, userId, indicator),
+      findOrganizationApiScopes(clientId, userId, indicator, targetOrganizations),
+    ]);
+
+    return deduplicateByKey([...personalScopes, ...organizationScopes], 'id');
+  };
+
+  const getResourceServerInfoCore = async ({
+    indicator,
+    clientId,
+    userId,
+    organizationId,
+    route,
+    hasConsentResult,
+    existingGrantId,
+  }: {
+    indicator: string;
+    clientId: string | undefined;
+    userId: string | undefined;
+    organizationId: string | undefined;
+    route: string | undefined;
+    hasConsentResult: boolean;
+    existingGrantId: string | undefined;
+  }): Promise<Pick<ResourceServer, 'accessTokenFormat' | 'jwt' | 'accessTokenTTL' | 'scope'>> => {
     const resourceServer = await findResource(queries, indicator);
 
     if (!resourceServer) {
@@ -127,6 +276,74 @@ export default function initOidc(
     }
 
     const { accessTokenTtl: accessTokenTTL } = resourceServer;
+    const treatAsCimdClient = shouldTreatAsCimdClient(envSet, clientId);
+    const isThirdParty =
+      treatAsCimdClient ||
+      (clientId !== undefined && (await isThirdPartyApplication(queries, clientId)));
+
+    if (isThirdParty && clientId) {
+      if (!consentAuthorizationRoutes.has(route ?? '')) {
+        // Token-issuance and other non-consent routes fail closed into context-isolated scope
+        // resolution for third-party apps and CIMD clients (Cases 1, 2 & 4).
+        const resolvedScopes = await findIsolatedTokenRouteScopes({
+          clientId,
+          userId,
+          indicator,
+          organizationId,
+        });
+
+        return {
+          ...getSharedResourceServerData(envSet),
+          accessTokenTTL,
+          scope: resolvedScopes.map(({ name }) => name).join(' '),
+        };
+      }
+
+      if (!isReservedResource(indicator)) {
+        const resolvedScopes = await findConsentStageApiScopes({
+          clientId,
+          userId,
+          indicator,
+          organizationId,
+          restrictToConsentedOrganizations: await shouldRestrictToConsentedOrganizations({
+            treatAsCimdClient,
+            hasConsentResult,
+            existingGrantId,
+          }),
+        });
+
+        return {
+          ...getSharedResourceServerData(envSet),
+          accessTokenTTL,
+          scope: resolvedScopes.map(({ name }) => name).join(' '),
+        };
+      }
+
+      // Preserve `ReservedResource.Organization` resolution on consent/authorization routes.
+      const scopes = await findResourceScopes({
+        queries,
+        libraries,
+        indicator,
+        findFromOrganizations: true,
+        organizationId,
+        applicationId: clientId,
+        userId,
+      });
+      const filteredScopes = treatAsCimdClient
+        ? await filterResourceScopesForTheCimdClient(queries, indicator, scopes)
+        : await filterResourceScopesForTheThirdPartyApplication(
+            libraries,
+            clientId,
+            indicator,
+            scopes
+          );
+
+      return {
+        ...getSharedResourceServerData(envSet),
+        accessTokenTTL,
+        scope: filteredScopes.map(({ name }) => name).join(' '),
+      };
+    }
 
     const scopes = await findResourceScopes({
       queries,
@@ -137,35 +354,6 @@ export default function initOidc(
       applicationId: clientId,
       userId,
     });
-
-    if (shouldTreatAsCimdClient(envSet, clientId)) {
-      /**
-       * CIMD clients are unregistered: the tenant-wide ceiling replaces the per-application
-       * consent configuration the third-party filter below reads.
-       */
-      const filteredScopes = await filterResourceScopesForTheCimdClient(queries, indicator, scopes);
-
-      return {
-        ...getSharedResourceServerData(envSet),
-        accessTokenTTL,
-        scope: filteredScopes.map(({ name }) => name).join(' '),
-      };
-    }
-
-    if (clientId && (await isThirdPartyApplication(queries, clientId))) {
-      const filteredScopes = await filterResourceScopesForTheThirdPartyApplication(
-        libraries,
-        clientId,
-        indicator,
-        scopes
-      );
-
-      return {
-        ...getSharedResourceServerData(envSet),
-        accessTokenTTL,
-        scope: filteredScopes.map(({ name }) => name).join(' '),
-      };
-    }
 
     return {
       ...getSharedResourceServerData(envSet),
@@ -215,6 +403,12 @@ export default function initOidc(
     },
     conformIdTokenClaims: false,
     ...getProviderFetchConfig(),
+    // In oidc-provider v9, `jwks_uri` and `sector_identifier_uri` default to no limit.
+    fetchResponseBodyLimits: {
+      'client_id metadata document': 5 * 1024,
+      jwks_uri: 64 * 1024,
+      sector_identifier_uri: 64 * 1024,
+    },
     features: {
       userinfo: { enabled: true },
       revocation: { enabled: true },
@@ -257,12 +451,20 @@ export default function initOidc(
         // Disable the auto use of authorization_code granted resource feature
         useGrantedResource: () => false,
         getResourceServerInfo: async (ctx, indicator) => {
-          const { client, params, session, entities } = ctx.oidc;
+          const { client, params, session, entities, route, result } = ctx.oidc;
           const userId = session?.accountId ?? entities.Account?.accountId;
           const organizationId =
             typeof params?.organization_id === 'string' ? params.organization_id : undefined;
 
-          return getResourceServerInfoCore(indicator, client?.clientId, userId, organizationId);
+          return getResourceServerInfoCore({
+            indicator,
+            clientId: client?.clientId,
+            userId,
+            organizationId,
+            route,
+            hasConsentResult: Boolean(result?.consent),
+            existingGrantId: conditional(client && session?.grantIdFor(client.clientId)),
+          });
         },
       },
     },
@@ -430,7 +632,7 @@ export default function initOidc(
       const [tokenExchangeClaims, organizationApiResourceClaims, jwtCustomizedClaims] =
         await Promise.all([
           getExtraTokenClaimsForTokenExchange(ctx, token),
-          getExtraTokenClaimsForOrganizationApiResource(ctx, token),
+          getExtraTokenClaimsForOrganizationApiResource(ctx, token, { envSet, queries }),
           getExtraTokenClaimsForJwtCustomization(
             // eslint-disable-next-line no-restricted-syntax -- see `oidc.use(koaAuditLog(queries))` below;
             ctx as KoaContextWithOIDC & WithLogContext,

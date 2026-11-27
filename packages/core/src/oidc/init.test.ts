@@ -124,7 +124,8 @@ const createContext = (
     grantType,
     organizationId,
     clientId: contextClientId = clientId,
-  }: { grantType: GrantType; organizationId?: string; clientId?: string }
+    route,
+  }: { grantType: GrantType; organizationId?: string; clientId?: string; route?: string }
 ) => {
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- minimal client stub for OIDC context testing
   const client: KoaContextWithOIDC['oidc']['client'] = {
@@ -138,6 +139,7 @@ const createContext = (
 
   return createOidcContext({
     provider,
+    ...(route ? { route } : {}),
     client,
     params: {
       grant_type: grantType,
@@ -175,6 +177,14 @@ describe('oidc provider init', () => {
     const { clientDefaults } = getProviderConfiguration(provider);
 
     expect(clientDefaults.id_token_signed_response_alg).toBe('RS256');
+  });
+
+  it('should set a finite response body limit for every fetch purpose', () => {
+    const { fetchResponseBodyLimits } = getProviderConfiguration(createProvider(new MockTenant()));
+
+    expect(
+      Object.entries(fetchResponseBodyLimits).filter(([, limit]) => !Number.isFinite(limit))
+    ).toEqual([]);
   });
 
   it('should allow missing application access control client metadata', async () => {
@@ -548,8 +558,12 @@ describe('oidc provider init', () => {
 describe('getResourceServerInfo for CIMD clients', () => {
   const cimdClientId = 'https://client.example.com/client-metadata.json';
 
-  const createCimdContext = (provider: KoaContextWithOIDC['oidc']['provider']) =>
-    createContext(provider, { grantType: GrantType.AuthorizationCode, clientId: cimdClientId });
+  const createCimdContext = (provider: KoaContextWithOIDC['oidc']['provider'], route?: string) =>
+    createContext(provider, {
+      grantType: GrantType.AuthorizationCode,
+      clientId: cimdClientId,
+      route,
+    });
 
   it('should filter resource scopes through the tenant ceiling without touching the applications table', async () => {
     const findResourceByIndicator = jest.fn().mockResolvedValue({
@@ -560,11 +574,14 @@ describe('getResourceServerInfo for CIMD clients', () => {
     const findApplicationById = jest.fn();
     const findUserScopesForResourceIndicator = jest
       .fn()
-      .mockResolvedValue([
-        buildScope('scope_1', 'read:api'),
-        buildScope('scope_2', 'write:api'),
-        buildScope('scope_3', 'read:organization-api'),
-      ]);
+      .mockResolvedValue([buildScope('scope_1', 'read:api'), buildScope('scope_2', 'write:api')]);
+    const getUserResourceScopes = jest.fn().mockResolvedValue([
+      {
+        id: 'scope_3',
+        name: 'read:organization-api',
+        resource: { id: resourceId, name: 'Test API' },
+      },
+    ]);
     const tenant = new MockTenant(undefined, {
       resources: { findResourceByIndicator },
       applications: { findApplicationById },
@@ -585,14 +602,20 @@ describe('getResourceServerInfo for CIMD clients', () => {
     tenant.setPartial('libraries', {
       users: { findUserScopesForResourceIndicator },
     });
+    jest
+      .spyOn(tenant.queries.organizations.relations.usersRoles, 'getUserResourceScopes')
+      .mockImplementation(getUserResourceScopes);
 
     const { id, queries, libraries, logtoConfigs, subscription } = tenant;
     const provider = initOidc(id, cimdEnvSet, queries, libraries, logtoConfigs, subscription);
-    const ctx = createCimdContext(provider);
+    // Consent / authorization stage combines personal and organization ceilings per context.
+    const ctx = createCimdContext(provider, 'authorization');
 
     const result = await getResourceServerInfo(ctx, indicator);
 
     expect(result.scope).toBe('read:api read:organization-api');
+    expect(findUserScopesForResourceIndicator).toHaveBeenCalledWith(accountId, indicator);
+    expect(getUserResourceScopes).toHaveBeenCalledWith(accountId, indicator, undefined);
     expect(findApplicationById).not.toHaveBeenCalled();
   });
 
