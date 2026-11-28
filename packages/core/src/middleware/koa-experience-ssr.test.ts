@@ -351,7 +351,7 @@ describe('koaExperienceSsr()', () => {
     expect(ctx.body).not.toContain('<style data-custom-css>');
   });
 
-  it('should inject appearance CSS tokens, font stylesheet, favicon, and SSR title outside preview', async () => {
+  it('should inject appearance CSS tokens, font stylesheet, and SSR title outside preview', async () => {
     (tenant.libraries.signInExperiences.getFullSignInExperience as jest.Mock).mockResolvedValueOnce(
       {
         ...mockSignInExperience,
@@ -361,6 +361,9 @@ describe('koaExperienceSsr()', () => {
         },
         appearance: {
           preset: 'entropy',
+          typography: {
+            fontPreset: 'noto-sans-sc',
+          },
         },
       }
     );
@@ -373,8 +376,8 @@ describe('koaExperienceSsr()', () => {
     await koaExperienceSsr(tenant.libraries, tenant.queries)(ctx, next);
 
     expect(ctx.body).toContain('<title>熵增账号中心</title>');
-    expect(ctx.body).toContain('data-ssr-favicon');
-    expect(ctx.body).toContain('data-appearance-font');
+    expect(ctx.body).not.toContain('data-ssr-favicon');
+    expect(ctx.body).toContain('data-appearance-font="true"');
     expect(ctx.body).toContain('<style data-appearance-tokens>');
     expect(ctx.body).toContain('--color-bg-float-base: #f4f4f6;');
     expect(ctx.body).toContain('--color-bg-float: #161920;');

@@ -26,6 +26,7 @@ const mockOrganization = Organizations.guard.parse({
   isTrustedDeviceAllowed: true,
   color: {},
   branding: {},
+  appearance: {},
   customCss: null,
   createdAt: 0,
 });

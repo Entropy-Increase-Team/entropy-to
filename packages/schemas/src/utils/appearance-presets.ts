@@ -93,7 +93,7 @@ export const appearancePresetDefaults: Readonly<
       darkLinkColor: '#6EA8FF',
     },
     typography: {
-      fontPreset: 'noto-sans-sc',
+      fontPreset: 'system',
     },
     motion: {
       reduced: false,
@@ -169,7 +169,7 @@ export const appearancePresetDefaults: Readonly<
       darkLinkColor: '#6EA8FF',
     },
     typography: {
-      fontPreset: 'noto-sans-sc',
+      fontPreset: 'system',
     },
     motion: {
       reduced: false,

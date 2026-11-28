@@ -67,6 +67,19 @@ function App() {
 
 export default App;
 
+function ConsoleDocumentMeta() {
+  const consoleBranding = useConsoleBranding();
+  const appTitle = isCloud ? mainTitle : consoleBranding.brandName || mainTitle;
+  const appFavicon = isCloud ? undefined : consoleBranding.faviconUrl || defaultConsoleFavicon;
+
+  return (
+    <Helmet titleTemplate={`%s - ${appTitle}`} defaultTitle={appTitle}>
+      {appFavicon && <link rel="icon" href={appFavicon} />}
+      {appFavicon && <link rel="apple-touch-icon" sizes="180x180" href={appFavicon} />}
+    </Helmet>
+  );
+}
+
 /**
  * This component serves as a container for all the providers and boundary components.
  *
@@ -75,10 +88,6 @@ export default App;
  * different components.
  */
 function Providers() {
-  const consoleBranding = useConsoleBranding();
-  const appTitle = isCloud ? mainTitle : consoleBranding.brandName || mainTitle;
-  const appFavicon = isCloud ? undefined : consoleBranding.faviconUrl || defaultConsoleFavicon;
-
   // For Cloud, we use Management API proxy for accessing tenant data.
   // For OSS, we directly call the tenant API with the default tenant API resource.
   const resources = useMemo(
@@ -131,15 +140,12 @@ function Providers() {
         }}
       >
         <AppThemeProvider>
-          <Helmet titleTemplate={`%s - ${appTitle}`} defaultTitle={appTitle}>
-            {appFavicon && <link rel="icon" href={appFavicon} />}
-            {appFavicon && <link rel="apple-touch-icon" sizes="180x180" href={appFavicon} />}
-          </Helmet>
           <Toast />
           <AppConfirmModalProvider>
             <ErrorBoundary>
               <LogtoErrorBoundary>
                 <AppDataProvider>
+                  <ConsoleDocumentMeta />
                   <GlobalScripts />
                   <Content />
                 </AppDataProvider>

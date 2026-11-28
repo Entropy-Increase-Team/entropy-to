@@ -87,7 +87,7 @@ function Preview({
             <ToggleUiThemeButton value={mode} size="small" onToggle={setMode} />
           )}
           <Select
-            className={styles.language}
+            className={styles.pageSelect}
             size="small"
             value={previewPath}
             options={pageOptions}

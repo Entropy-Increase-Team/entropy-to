@@ -1,4 +1,5 @@
 import { adminTenantId, fullSignInExperienceGuard } from '@logto/schemas';
+import { type Nullable, trySafe } from '@silverhand/essentials';
 import { z } from 'zod';
 
 import { EnvSet, getTenantEndpoint } from '#src/env-set/index.js';
@@ -10,6 +11,15 @@ import { getAccountCenterApiGuards } from '../account-center/guards.js';
 import type { AnonymousRouter } from '../types.js';
 
 import experienceRoutes from './well-known.experience.js';
+
+const pickNonEmpty = (primary?: Nullable<string>, fallback?: string): string => {
+  const trimmedPrimary = primary?.trim();
+  if (trimmedPrimary) {
+    return trimmedPrimary;
+  }
+
+  return fallback?.trim() ?? '';
+};
 
 export default function wellKnownRoutes<T extends AnonymousRouter>(
   router: T,
@@ -113,8 +123,10 @@ export default function wellKnownRoutes<T extends AnonymousRouter>(
       status: 200,
     }),
     async (ctx, next) => {
+      const signInExperience = await trySafe(findDefaultSignInExperience());
+      const storedBranding = signInExperience?.branding;
       const {
-        brandName,
+        brandName: envBrandName,
         brandLogoUrl,
         brandDarkLogoUrl,
         brandFaviconUrl,
@@ -123,14 +135,21 @@ export default function wellKnownRoutes<T extends AnonymousRouter>(
         brandSupportEmail,
       } = EnvSet.values;
 
+      const brandName = pickNonEmpty(storedBranding?.brandName, envBrandName);
+      const logoUrl = pickNonEmpty(storedBranding?.logoUrl, brandLogoUrl);
+      const darkLogoUrl = pickNonEmpty(storedBranding?.darkLogoUrl, brandDarkLogoUrl);
+      const faviconUrl = pickNonEmpty(storedBranding?.favicon, brandFaviconUrl);
+      const websiteUrl = pickNonEmpty(signInExperience?.supportWebsiteUrl, brandWebsiteUrl);
+      const supportEmail = pickNonEmpty(signInExperience?.supportEmail, brandSupportEmail);
+
       ctx.body = {
         brandName,
-        ...(brandLogoUrl && { logoUrl: brandLogoUrl }),
-        ...(brandDarkLogoUrl && { darkLogoUrl: brandDarkLogoUrl }),
-        ...(brandFaviconUrl && { faviconUrl: brandFaviconUrl }),
-        ...(brandWebsiteUrl && { websiteUrl: brandWebsiteUrl }),
+        ...(logoUrl && { logoUrl }),
+        ...(darkLogoUrl && { darkLogoUrl }),
+        ...(faviconUrl && { faviconUrl }),
+        ...(websiteUrl && { websiteUrl }),
         ...(brandDocsUrl && { docsUrl: brandDocsUrl }),
-        ...(brandSupportEmail && { supportEmail: brandSupportEmail }),
+        ...(supportEmail && { supportEmail }),
       };
 
       return next();

@@ -1,7 +1,9 @@
 import { Theme } from '@logto/schemas';
-import useSWR from 'swr';
+import { useContext } from 'react';
+import useSWR, { mutate } from 'swr';
 
 import { adminEndpoint, isCloud } from '@/consts/env';
+import { AppDataContext } from '@/contexts/AppDataContext';
 
 type ConsoleBranding = {
   brandName: string;
@@ -12,6 +14,8 @@ type ConsoleBranding = {
   docsUrl: string;
   supportEmail: string;
 };
+
+const consoleBrandingPath = '/api/.well-known/console-branding';
 
 const defaultConsoleBranding: ConsoleBranding = Object.freeze({
   brandName: '熵增账号中心',
@@ -24,7 +28,7 @@ const defaultConsoleBranding: ConsoleBranding = Object.freeze({
 });
 
 /**
- * Neutral geometric SVG favicon fallback when no custom `BRAND_FAVICON_URL` is configured.
+ * Neutral geometric SVG favicon fallback when no custom favicon is configured.
  * Contains no Logto branding and no proprietary brand assets.
  */
 export const defaultConsoleFavicon =
@@ -65,13 +69,14 @@ export const getConsoleLogoUrl = (branding: ConsoleBranding, theme: Theme): stri
   return branding.logoUrl || branding.darkLogoUrl;
 };
 
+/** Revalidates cached console branding after sign-in experience branding changes are saved. */
+export const revalidateConsoleBranding = async () =>
+  mutate((key) => typeof key === 'string' && key.endsWith(consoleBrandingPath));
+
 const useConsoleBranding = (): ConsoleBranding => {
-  const endpointUrl = isCloud
-    ? null
-    : new URL(
-        '/api/.well-known/console-branding',
-        adminEndpoint ?? window.location.origin
-      ).toString();
+  const { tenantEndpoint } = useContext(AppDataContext);
+  const baseEndpoint = tenantEndpoint ?? adminEndpoint ?? window.location.origin;
+  const endpointUrl = isCloud ? null : new URL(consoleBrandingPath, baseEndpoint).toString();
 
   const { data } = useSWR<ConsoleBranding>(endpointUrl, fetchConsoleBranding, {
     revalidateOnFocus: false,

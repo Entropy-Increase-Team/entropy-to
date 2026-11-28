@@ -15,6 +15,7 @@ import UnsavedChangesAlertModal from '@/components/UnsavedChangesAlertModal';
 import ReadOnlyFieldScope from '@/contexts/ReadOnlyFieldScope/ReadOnlyFieldScope';
 import ConfirmModal from '@/ds-components/ConfirmModal';
 import TabNav, { TabNavItem } from '@/ds-components/TabNav';
+import { revalidateConsoleBranding } from '@/hooks/use-console-branding';
 import useCurrentTenantScopes from '@/hooks/use-current-tenant-scopes';
 import useEnabledConnectorTypes from '@/hooks/use-enabled-connector-types';
 import useTenantPathname from '@/hooks/use-tenant-pathname';
@@ -83,6 +84,7 @@ function PageContent({ data, onSignInExperienceUpdated, onAccountCenterUpdated }
 
   const handleSaved = useCallback(() => {
     setDataToCompare(undefined);
+    void revalidateConsoleBranding();
   }, []);
 
   const { isSaving, saveData } = useSaveSignInExperiencePage({

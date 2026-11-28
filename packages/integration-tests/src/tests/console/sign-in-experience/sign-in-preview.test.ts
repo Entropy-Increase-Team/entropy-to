@@ -51,16 +51,19 @@ describe('sign-in experience: sign-in preview', () => {
   });
 
   it('switch between theme modes', async () => {
-    // Enable dark mode
-    await expect(page).toClick(
-      'form div[class$=field] label[class$=switch]:has(input[name="color.isDarkModeEnabled"])'
+    // Ensure dark mode is enabled before toggling preview theme
+    const isInitiallyEnabled = await page.evaluate(
+      () =>
+        document.querySelector<HTMLInputElement>(
+          'form div[class$=field] input[name="color.isDarkModeEnabled"]'
+        )?.checked ?? false
     );
 
-    await page.evaluate(() => {
-      return document.querySelector<HTMLInputElement>(
-        'form div[class$=field] input[name="color.isDarkModeEnabled"]'
-      )?.checked;
-    });
+    if (!isInitiallyEnabled) {
+      await expect(page).toClick(
+        'form div[class$=field] label[class$=switch]:has(input[name="color.isDarkModeEnabled"])'
+      );
+    }
 
     // Switch to dark mode
     await expect(page).toClick(
@@ -78,10 +81,12 @@ describe('sign-in experience: sign-in preview', () => {
       'div[class$=preview] div[class$=deviceWrapper] div[class*=device][class*=light]'
     );
 
-    // Reset
-    await expect(page).toClick(
-      'form div[class$=field] label[class$=switch]:has(input[name="color.isDarkModeEnabled"])'
-    );
+    // Reset to initial state
+    if (!isInitiallyEnabled) {
+      await expect(page).toClick(
+        'form div[class$=field] label[class$=switch]:has(input[name="color.isDarkModeEnabled"])'
+      );
+    }
   });
 
   it('switch between preview languages', async () => {

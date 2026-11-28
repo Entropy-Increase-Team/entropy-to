@@ -111,4 +111,29 @@ describe('GET /.well-known/sign-in-exp', () => {
     expect(response.body).not.toHaveProperty('emailBlocklistPolicy');
     expect(response.body).not.toHaveProperty('forgotPasswordMethods');
   });
+
+  it('should return DB-backed console branding from default sign-in experience', async () => {
+    findDefaultSignInExperience.mockResolvedValueOnce({
+      ...mockSignInExperience,
+      branding: {
+        brandName: 'Custom DB Brand',
+        logoUrl: 'https://cdn.example.com/logo.svg',
+        darkLogoUrl: 'https://cdn.example.com/logo-dark.svg',
+        favicon: 'https://cdn.example.com/favicon.svg',
+      },
+      supportEmail: 'help@example.com',
+      supportWebsiteUrl: 'https://example.com',
+    });
+
+    const response = await sessionRequest.get('/.well-known/console-branding');
+    expect(response.status).toEqual(200);
+    expect(response.body).toMatchObject({
+      brandName: 'Custom DB Brand',
+      logoUrl: 'https://cdn.example.com/logo.svg',
+      darkLogoUrl: 'https://cdn.example.com/logo-dark.svg',
+      faviconUrl: 'https://cdn.example.com/favicon.svg',
+      websiteUrl: 'https://example.com',
+      supportEmail: 'help@example.com',
+    });
+  });
 });

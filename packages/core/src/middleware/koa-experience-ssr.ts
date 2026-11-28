@@ -46,15 +46,12 @@ const buildExperienceHeadTags = (signInExperience: FullSignInExperience): string
     branding,
     hideLogtoBranding
   );
-  const faviconUrl = branding.favicon ?? (EnvSet.values.brandFaviconUrl || undefined);
   const fontStylesheetUrl = getAppearanceFontStylesheetUrl(resolvedAppearance.typography);
   const appearanceCss = buildAppearanceStyleSheet(resolvedAppearance, color);
 
   return conditionalArray<string>(
-    faviconUrl &&
-      `<link rel="shortcut icon" href="${escapeHtmlAttributeValue(faviconUrl)}" data-ssr-favicon>`,
     fontStylesheetUrl &&
-      `<link rel="stylesheet" href="${escapeHtmlAttributeValue(fontStylesheetUrl)}" data-appearance-font>`,
+      `<link rel="stylesheet" href="${escapeHtmlAttributeValue(fontStylesheetUrl)}" data-appearance-font="true">`,
     `<style data-appearance-tokens>${appearanceCss.replaceAll(/<\/(style)/gi, '<\\/$1')}</style>`,
     customCss && `<style data-custom-css>${customCss.replaceAll(/<\/(style)/gi, '<\\/$1')}</style>`
   );
