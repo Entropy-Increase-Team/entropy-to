@@ -20,6 +20,8 @@ create table organizations (
   color jsonb /* @use PartialColor */ not null default '{}'::jsonb,
   /** The organization's branding configuration. */
   branding jsonb /* @use Branding */ not null default '{}'::jsonb,
+  /** The organization's sign-in appearance override configuration. */
+  appearance jsonb /* @use SignInExperienceAppearance */ not null default '{}'::jsonb,
   /** The custom CSS of the organization. */
   custom_css text,
   /** When the organization was created. */

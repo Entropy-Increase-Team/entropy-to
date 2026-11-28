@@ -1,8 +1,19 @@
-import { type SsrData, logtoCookieKey, logtoUiCookieGuard, ssrPlaceholder } from '@logto/schemas';
-import { pick, trySafe } from '@silverhand/essentials';
+import {
+  type FullSignInExperience,
+  type SsrData,
+  buildAppearanceStyleSheet,
+  getAppearanceFontStylesheetUrl,
+  logtoCookieKey,
+  logtoUiCookieGuard,
+  resolveSignInExperienceAppearance,
+  ssrPlaceholder,
+} from '@logto/schemas';
+import { conditionalArray, pick, trySafe } from '@silverhand/essentials';
 import type { MiddlewareType } from 'koa';
 
+import { EnvSet } from '#src/env-set/index.js';
 import { readOptionalTheme } from '#src/oidc/utils.js';
+import { escapeHtmlAttributeValue } from '#src/saml-application/SamlApplication/utils.js';
 import type Libraries from '#src/tenants/Libraries.js';
 import type Queries from '#src/tenants/Queries.js';
 import { getExperienceLanguage } from '#src/utils/i18n.js';
@@ -27,6 +38,56 @@ const serializeSsrData = (data: SsrData): string =>
     // Escape to their `\uXXXX` form, which JS decodes back to the original characters.
     .replaceAll('\u2028', '\\u2028') // U+2028 LINE SEPARATOR
     .replaceAll('\u2029', '\\u2029'); // U+2029 PARAGRAPH SEPARATOR
+
+const buildExperienceHeadTags = (signInExperience: FullSignInExperience): string[] => {
+  const { customCss, appearance, branding, color, hideLogtoBranding } = signInExperience;
+  const resolvedAppearance = resolveSignInExperienceAppearance(
+    appearance,
+    branding,
+    hideLogtoBranding
+  );
+  const faviconUrl = branding.favicon ?? (EnvSet.values.brandFaviconUrl || undefined);
+  const fontStylesheetUrl = getAppearanceFontStylesheetUrl(resolvedAppearance.typography);
+  const appearanceCss = buildAppearanceStyleSheet(resolvedAppearance, color);
+
+  return conditionalArray<string>(
+    faviconUrl &&
+      `<link rel="shortcut icon" href="${escapeHtmlAttributeValue(faviconUrl)}" data-ssr-favicon>`,
+    fontStylesheetUrl &&
+      `<link rel="stylesheet" href="${escapeHtmlAttributeValue(fontStylesheetUrl)}" data-appearance-font>`,
+    `<style data-appearance-tokens>${appearanceCss.replaceAll(/<\/(style)/gi, '<\\/$1')}</style>`,
+    customCss && `<style data-custom-css>${customCss.replaceAll(/<\/(style)/gi, '<\\/$1')}</style>`
+  );
+};
+
+const injectExperienceHead = (
+  html: string,
+  signInExperience: FullSignInExperience,
+  isPreview: boolean
+): string => {
+  if (isPreview) {
+    return html;
+  }
+
+  const headInjections = buildExperienceHeadTags(signInExperience);
+  const ssrTitle = signInExperience.branding.brandName ?? EnvSet.values.brandName;
+  const htmlWithTitle =
+    ssrTitle && html.includes('<title></title>')
+      ? html.replace(
+          '<title></title>',
+          () => `<title>${escapeHtmlAttributeValue(ssrTitle)}</title>`
+        )
+      : html;
+
+  if (headInjections.length === 0 || !htmlWithTitle.includes('</head>')) {
+    return htmlWithTitle;
+  }
+
+  // Use a replacement *function* so `$`-sequences (`$$`/`$&`/`` $` ``/`$'`) in admin CSS are
+  // inserted verbatim. As a string replacement, `$'` would expand to the document tail after
+  // the `</head>` match and corrupt the stylesheet instead of being treated as literal CSS.
+  return htmlWithTitle.replace('</head>', () => `${headInjections.join('')}</head>`);
+};
 
 /**
  * Create a middleware to prefetch the experience data and inject it into the HTML response. Some
@@ -74,35 +135,15 @@ export default function koaExperienceSsr<StateT, ContextT extends WithI18nContex
 
     ctx.set('Content-Language', language);
 
-    // Inline custom CSS into <head> on the first byte so it is in the cascade for the first paint,
-    // removing the flash before react-helmet injects the same <style> client-side. Done BEFORE the SSR
-    // placeholder substitution so the `</head>` match can only hit the genuine document head. Skipped in
-    // preview mode (`?preview=true`), where the console iframe drives styling live via postMessage and
-    // inlining the *saved* CSS could leak rules being edited. `</style` is defused so admin CSS can't
-    // terminate the element early (parser sees `<\/style`; the CSS engine unescapes `\/`→`/`). See PR #8917.
-    const { customCss } = signInExperience;
-
     // Koa parses repeated query keys into an array, so `?preview=true&preview=x` yields `['true', 'x']`.
-    // Normalize before comparing — a bare `!== 'true'` check would treat the array as non-preview and
-    // inline the saved CSS during a preview load, the exact leak the preview branch is meant to prevent.
+    // Normalize before comparing so saved CSS/tokens are never inlined during preview loads.
     const isPreview = [ctx.query.preview].flat().includes('true');
-
-    const htmlWithCss =
-      customCss && !isPreview
-        ? ctx.body.replace(
-            '</head>',
-            // Use a replacement *function* so `$`-sequences (`$$`/`$&`/`` $` ``/`$'`) in admin CSS are
-            // inserted verbatim. As a string replacement, `$'` would expand to the document tail after
-            // the `</head>` match and corrupt the stylesheet instead of being treated as literal CSS.
-            () =>
-              `<style data-custom-css>${customCss.replaceAll(/<\/(style)/gi, '<\\/$1')}</style></head>`
-          )
-        : ctx.body;
+    const htmlWithHead = injectExperienceHead(ctx.body, signInExperience, isPreview);
 
     // Use a replacement *function* so any `$`-sequence in the serialized data is inserted verbatim. As a
     // string replacement, `$'` would expand to the document text after the placeholder and re-inject an
     // unescaped `</script>` — defeating the HTML-delimiter escaping in `serializeSsrData`.
-    ctx.body = htmlWithCss.replace(
+    ctx.body = htmlWithHead.replace(
       ssrPlaceholder,
       () =>
         `Object.freeze(${serializeSsrData({

@@ -1,4 +1,5 @@
 export * from './application.js';
+export * from './appearance.js';
 export * from './role.js';
 export * from './management-api.js';
 export * from './domain.js';

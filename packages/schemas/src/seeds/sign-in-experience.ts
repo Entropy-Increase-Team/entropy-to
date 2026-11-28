@@ -1,5 +1,3 @@
-import { generateDarkColor } from '@logto/core-kit';
-
 import type { CreateSignInExperience } from '../db-entries/index.js';
 import { SignInMode } from '../db-entries/index.js';
 import {
@@ -12,7 +10,10 @@ import {
 
 import { adminTenantId, defaultTenantId } from './tenant.js';
 
-export const defaultPrimaryColor = '#6139F6';
+export const defaultPrimaryColor = '#14171C';
+export const defaultDarkPrimaryColor = '#F5F7FA';
+export const defaultLinkColor = '#0D74CE';
+export const defaultDarkLinkColor = '#6EA8FF';
 
 export const createDefaultSignInExperience = (
   forTenantId: string,
@@ -23,14 +24,14 @@ export const createDefaultSignInExperience = (
     id: 'default',
     color: {
       primaryColor: defaultPrimaryColor,
-      isDarkModeEnabled: false,
-      darkPrimaryColor: generateDarkColor(defaultPrimaryColor),
+      isDarkModeEnabled: true,
+      darkPrimaryColor: defaultDarkPrimaryColor,
+      linkColor: defaultLinkColor,
+      darkLinkColor: defaultDarkLinkColor,
     },
-    branding: {
-      logoUrl: isCloud ? undefined : 'https://logto.io/logo.svg',
-      darkLogoUrl: isCloud ? undefined : 'https://logto.io/logo-dark.svg',
-    },
-    hideLogtoBranding: false,
+    branding: {},
+    appearance: {},
+    hideLogtoBranding: true,
     languageInfo: {
       autoDetect: true,
       fallbackLanguage: 'en' as const,
@@ -93,10 +94,9 @@ export const createAdminTenantSignInExperience = (
       isDarkModeEnabled: true,
     },
     signInMode: SignInMode.Register,
-    branding: {
-      logoUrl: 'https://logto.io/logo.svg',
-      darkLogoUrl: 'https://logto.io/logo-dark.svg',
-    },
+    branding: {},
+    appearance: {},
+    hideLogtoBranding: true,
     passwordPolicy: options.disablePwnedPasswordCheck
       ? {
           ...defaultSignInExperience.passwordPolicy,

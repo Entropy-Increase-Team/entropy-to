@@ -267,16 +267,38 @@ const queryDatabaseData = async (database, manifests) => {
 
       const data = omitArray(
         rows.map((row) => {
-          // Fresh installs opt into explicit MFA enrollment; upgrades keep the old setting.
-          // Remove once the release shipping LOG-14724 lands and the released CLI seeds Explicit (LOG-14809).
+          // Fresh installs opt into explicit MFA enrollment and white-label Entropy default
+          // appearance/branding; upgrades keep existing tenant rows untouched.
           if (
             table_schema === 'public' &&
             table_name === 'sign_in_experiences' &&
-            row.tenant_id === 'default' &&
-            row.id === 'default' &&
-            row.mfa?.verificationCodeEnrollment === 'Explicit'
+            row.id === 'default'
           ) {
-            return { ...row, mfa: omit(row.mfa, 'verificationCodeEnrollment') };
+            const normalized = { ...row };
+            if (
+              row.tenant_id === 'default' &&
+              row.mfa?.verificationCodeEnrollment === 'Explicit'
+            ) {
+              normalized.mfa = omit(row.mfa, 'verificationCodeEnrollment');
+            }
+            if (
+              (row.tenant_id === 'default' || row.tenant_id === 'admin') &&
+              row.hide_logto_branding === true &&
+              Object.keys(row.branding ?? {}).length === 0 &&
+              row.color?.primaryColor === '#14171C'
+            ) {
+              normalized.hide_logto_branding = false;
+              normalized.branding = {
+                logoUrl: 'https://logto.io/logo.svg',
+                darkLogoUrl: 'https://logto.io/logo-dark.svg',
+              };
+              normalized.color = {
+                primaryColor: '#6139F6',
+                isDarkModeEnabled: row.tenant_id === 'admin',
+                darkPrimaryColor: '#8768F8',
+              };
+            }
+            return normalized;
           }
 
           return row;

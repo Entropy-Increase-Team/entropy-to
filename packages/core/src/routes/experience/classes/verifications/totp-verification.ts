@@ -9,6 +9,7 @@ import {
   type SanitizedTotpVerificationRecordData,
 } from '@logto/schemas';
 import { generateStandardId, getUserDisplayName } from '@logto/shared';
+import { trySafe } from '@silverhand/essentials';
 import { authenticator } from 'otplib';
 import qrcode from 'qrcode';
 
@@ -96,7 +97,9 @@ export class TotpVerification implements MfaVerificationRecord<VerificationType.
     this.#secret = generateTotpSecret();
 
     const { hostname } = ctx.URL;
-    const secretQrCode = await this.generateSecretQrCode(hostname);
+    const sie = await trySafe(this.queries.signInExperiences.findDefaultSignInExperience());
+    const serviceName = sie?.branding.brandName ?? hostname;
+    const secretQrCode = await this.generateSecretQrCode(serviceName);
 
     return {
       secret: this.#secret,

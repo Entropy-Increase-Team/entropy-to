@@ -14,6 +14,7 @@ import { addYears } from 'date-fns';
 import forge from 'node-forge';
 import { z } from 'zod';
 
+import { EnvSet } from '#src/env-set/index.js';
 import RequestError from '#src/errors/RequestError/index.js';
 import {
   generateSamlAttributeTag,
@@ -35,6 +36,8 @@ export const generateKeyPairAndCertificate = async (lifeSpanInYears: number) => 
   return createCertificate(keypair, lifeSpanInYears);
 };
 
+const isAscii = (value: string) => /^[\u0020-\u007E]+$/.test(value);
+
 const createCertificate = (keypair: forge.pki.KeyPair, lifeSpanInYears: number) => {
   const cert = forge.pki.createCertificate();
   const notBefore = new Date();
@@ -50,15 +53,33 @@ const createCertificate = (keypair: forge.pki.KeyPair, lifeSpanInYears: number) 
   cert.validity.notAfter = notAfter;
   /* eslint-enable @silverhand/fp/no-mutation */
 
-  // TODO: read from tenant config or let user customize before downloading
+  const brandName = EnvSet.values.brandName || 'Entropy Auth';
+  const commonName = (() => {
+    if (EnvSet.values.brandWebsiteUrl) {
+      try {
+        return new URL(EnvSet.values.brandWebsiteUrl).hostname;
+      } catch {
+        // Fallback to instance endpoint hostname
+      }
+    }
+
+    return EnvSet.values.endpoint.hostname;
+  })();
+
   const identityAttributes: forge.pki.CertificateField[] = [
     {
       name: 'commonName',
-      value: 'logto.io',
+      value: commonName,
     },
     {
       name: 'organizationName',
-      value: 'Logto',
+      value: brandName,
+      ...(isAscii(brandName)
+        ? {}
+        : {
+            // eslint-disable-next-line no-restricted-syntax -- `@types/node-forge` types `valueTagClass` as `asn1.Class`, whereas node-forge checks `asn1.Type.UTF8` at runtime.
+            valueTagClass: forge.asn1.Type.UTF8 as unknown as forge.asn1.Class,
+          }),
     },
     {
       name: 'countryName',

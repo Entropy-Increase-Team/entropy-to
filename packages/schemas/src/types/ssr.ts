@@ -23,10 +23,13 @@ export type SsrData = {
 };
 
 /**
- * The server-side rendering data type for **account center**. Only sign-in experience color/theme
- * data is needed for theme flash prevention.
+ * The server-side rendering data type for **account center**. Includes appearance, branding, and
+ * color tokens needed for zero-FOUC rendering.
  */
-export type AccountCenterSsrSignInExperience = Pick<SignInExperience, 'color'>;
+export type AccountCenterSsrSignInExperience = Pick<
+  SignInExperience,
+  'color' | 'appearance' | 'branding' | 'hideLogtoBranding'
+>;
 
 export type AccountCenterSsrData = {
   signInExperience: {

@@ -7,7 +7,12 @@ import koaAccountCenterSsr from './koa-account-center-ssr.js';
 const { jest } = import.meta;
 
 const accountCenterSsrPlaceholder = '"__LOGTO_ACCOUNT_CENTER_SSR__"';
-const mockAccountCenterSsrSignInExperience = { color: mockSignInExperience.color };
+const mockAccountCenterSsrSignInExperience = {
+  color: mockSignInExperience.color,
+  appearance: mockSignInExperience.appearance,
+  branding: mockSignInExperience.branding,
+  hideLogtoBranding: mockSignInExperience.hideLogtoBranding,
+};
 
 describe('koaAccountCenterSsr()', () => {
   const baseCtx = Object.freeze({

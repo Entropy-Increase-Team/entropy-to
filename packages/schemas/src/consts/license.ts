@@ -256,8 +256,8 @@ export const licensePayloadGuard = z.object({
  * definition of "self-hosted, no license".
  */
 export const ossDefaultQuota = Object.freeze({
-  hideLogtoBranding: false,
-  bringYourUi: false,
+  hideLogtoBranding: true,
+  bringYourUi: true,
   idpInitiatedSso: false,
   consoleCollaboration: false,
   mandatoryMfa: false,
