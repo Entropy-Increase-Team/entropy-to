@@ -41,7 +41,7 @@ export const defaultMetadata: ConnectorMetadata = {
       label: 'From Name',
       type: ConnectorConfigFormItemType.Text,
       required: false,
-      placeholder: 'Logto',
+      placeholder: 'Your Brand',
     },
     {
       key: 'templates',
@@ -54,63 +54,63 @@ export const defaultMetadata: ConnectorMetadata = {
           type: 'text/plain',
           subject: 'Logto SignIn Template',
           content:
-            'Your Logto sign-in verification code is {{code}}. The code will remain active for 10 minutes.',
+            'Your sign-in verification code is {{code}}. The code will remain active for 10 minutes.',
         },
         {
           usageType: 'Register',
           type: 'text/plain',
           subject: 'Logto Register Template',
           content:
-            'Your Logto sign-up verification code is {{code}}. The code will remain active for 10 minutes.',
+            'Your sign-up verification code is {{code}}. The code will remain active for 10 minutes.',
         },
         {
           usageType: 'ForgotPassword',
           type: 'text/plain',
           subject: 'Logto ForgotPassword Template',
           content:
-            'Your Logto password change verification code is {{code}}. The code will remain active for 10 minutes.',
+            'Your password change verification code is {{code}}. The code will remain active for 10 minutes.',
         },
         {
           usageType: 'OrganizationInvitation',
           type: 'text/plain',
           subject: 'Logto OrganizationInvitation Template',
           content:
-            'Your Logto organization invitation code is {{code}}. The code will remain active for 10 minutes.',
+            'Your organization invitation code is {{code}}. The code will remain active for 10 minutes.',
         },
         {
           usageType: 'Generic',
           type: 'text/plain',
           subject: 'Logto Generic Template',
           content:
-            'Your Logto verification code is {{code}}. The code will remain active for 10 minutes.',
+            'Your verification code is {{code}}. The code will remain active for 10 minutes.',
         },
         {
           usageType: 'UserPermissionValidation',
           type: 'text/plain',
           subject: 'Logto UserPermissionValidation Template',
           content:
-            'Your Logto permission validation code is {{code}}. The code will remain active for 10 minutes.',
+            'Your permission validation code is {{code}}. The code will remain active for 10 minutes.',
         },
         {
           usageType: 'BindNewIdentifier',
           type: 'text/plain',
           subject: 'Logto BindNewIdentifier Template',
           content:
-            'Your Logto new identifier binding code is {{code}}. The code will remain active for 10 minutes.',
+            'Your new identifier binding code is {{code}}. The code will remain active for 10 minutes.',
         },
         {
           usageType: 'MfaVerification',
           type: 'text/plain',
           subject: 'Logto MfaVerification Template',
           content:
-            'Your Logto MFA verification code is {{code}}. The code will remain active for 10 minutes.',
+            'Your MFA verification code is {{code}}. The code will remain active for 10 minutes.',
         },
         {
           usageType: 'BindMfa',
           type: 'text/plain',
           subject: 'Logto BindMfa Template',
           content:
-            'Your Logto 2-step verification setup code is {{code}}. The code will remain active for 10 minutes.',
+            'Your 2-step verification setup code is {{code}}. The code will remain active for 10 minutes.',
         },
       ],
     },

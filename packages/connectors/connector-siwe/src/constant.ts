@@ -30,7 +30,7 @@ export const nonceTtlSeconds = 10 * 60;
  * The SIWE parser used by the connector requires a statement line, so the connector always
  * includes one even when the administrator leaves the config empty.
  */
-export const defaultStatement = 'Sign in to Logto';
+export const defaultStatement = 'Sign in to your account';
 
 export const defaultMetadata: ConnectorMetadata = {
   id: SiweConnector.factoryId,
