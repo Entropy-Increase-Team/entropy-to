@@ -263,7 +263,11 @@ describe('koaServeCustomUiAssets middleware', () => {
     });
     const directCtx = createMockContext({ url: '/direct/social/okta.com' });
     await koaServeCustomUiAssets('custom-ui-asset-id')(directCtx, next);
-    expect(mockedDownloadFile).toHaveBeenLastCalledWith('default/custom-ui-asset-id/index.html');
+    expect(mockedDownloadFile).toHaveBeenCalledWith(
+      'default/custom-ui-asset-id/index.html',
+      undefined,
+      undefined
+    );
   });
 
   describe('with an S3-compatible storage', () => {

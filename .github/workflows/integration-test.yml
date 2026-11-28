@@ -70,6 +70,8 @@ jobs:
   rerun-on-failure:
     needs: run-logto
     if: failure() && fromJSON(github.run_attempt) < 3
+    permissions:
+      actions: write
     runs-on: ubuntu-22.04
     steps:
       - env:

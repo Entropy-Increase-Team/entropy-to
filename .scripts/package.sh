@@ -49,5 +49,6 @@ if [[ "${SKIP_TAR:-}" == @(1|true|y|yes|yep|yeah) ]]; then
 fi
 
 echo Tar the package
+repo_dir="$(basename "$PWD")"
 cd ..
-tar -czf /tmp/logto.tar.gz logto
+tar -czf /tmp/logto.tar.gz "$repo_dir"
