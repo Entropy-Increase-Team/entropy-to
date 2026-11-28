@@ -27,6 +27,11 @@ jest.mock('@logto/react', () => ({
   useLogto: jest.fn(),
 }));
 
+jest.mock('@/consts/env', () => ({
+  isCloud: false,
+  adminEndpoint: undefined,
+}));
+
 jest.mock('@/utils/storage', () => ({
   saveRedirect: jest.fn(),
 }));

@@ -37,6 +37,7 @@ import AppDataProvider, { AppDataContext } from './contexts/AppDataProvider';
 import { AppThemeProvider } from './contexts/AppThemeProvider';
 import TenantsProvider, { TenantsContext } from './contexts/TenantsProvider';
 import Toast from './ds-components/Toast';
+import useConsoleBranding, { defaultConsoleFavicon } from './hooks/use-console-branding';
 import useCurrentUser from './hooks/use-current-user';
 import initI18n from './i18n/init';
 
@@ -74,6 +75,10 @@ export default App;
  * different components.
  */
 function Providers() {
+  const consoleBranding = useConsoleBranding();
+  const appTitle = isCloud ? mainTitle : consoleBranding.brandName || mainTitle;
+  const appFavicon = isCloud ? undefined : consoleBranding.faviconUrl || defaultConsoleFavicon;
+
   // For Cloud, we use Management API proxy for accessing tenant data.
   // For OSS, we directly call the tenant API with the default tenant API resource.
   const resources = useMemo(
@@ -126,7 +131,10 @@ function Providers() {
         }}
       >
         <AppThemeProvider>
-          <Helmet titleTemplate={`%s - ${mainTitle}`} defaultTitle={mainTitle} />
+          <Helmet titleTemplate={`%s - ${appTitle}`} defaultTitle={appTitle}>
+            {appFavicon && <link rel="icon" href={appFavicon} />}
+            {appFavicon && <link rel="apple-touch-icon" sizes="180x180" href={appFavicon} />}
+          </Helmet>
           <Toast />
           <AppConfirmModalProvider>
             <ErrorBoundary>

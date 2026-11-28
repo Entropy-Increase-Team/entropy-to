@@ -3,7 +3,7 @@ import { condArray, noop, trySafe } from '@silverhand/essentials';
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useState, createContext } from 'react';
 
-import { storageKeys } from '@/consts';
+import { storageKeys } from '@/consts/storage';
 import type { AppearanceMode } from '@/types/appearance-mode';
 import { appearanceModeGuard, DynamicAppearanceMode } from '@/types/appearance-mode';
 

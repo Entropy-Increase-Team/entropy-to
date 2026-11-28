@@ -34,6 +34,11 @@
   color: var(--color-text);
 }
 
+.brandText {
+  font: var(--font-title-1);
+  color: var(--color-text);
+}
+
 main {
   flex: 1;
   display: flex;

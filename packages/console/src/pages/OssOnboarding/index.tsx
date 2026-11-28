@@ -10,6 +10,7 @@ import PizzaIcon from '@/assets/icons/pizza.svg?react';
 import Logo from '@/assets/images/logo.svg?react';
 import ActionBar from '@/components/ActionBar';
 import PageMeta from '@/components/PageMeta';
+import { isCloud } from '@/consts/env';
 import { AppThemeContext } from '@/contexts/AppThemeProvider';
 import Button from '@/ds-components/Button';
 import Checkbox from '@/ds-components/Checkbox';
@@ -17,6 +18,7 @@ import FormField from '@/ds-components/FormField';
 import OverlayScrollbar from '@/ds-components/OverlayScrollbar';
 import RadioGroup, { Radio } from '@/ds-components/RadioGroup';
 import TextInput from '@/ds-components/TextInput';
+import useConsoleBranding, { getConsoleLogoUrl } from '@/hooks/use-console-branding';
 import useOssOnboardingData from '@/hooks/use-oss-onboarding-data';
 import useTenantPathname from '@/hooks/use-tenant-pathname';
 import { trySubmitSafe } from '@/utils/form';
@@ -32,6 +34,8 @@ import {
 
 function OssOnboarding() {
   const { t } = useTranslation(undefined, { keyPrefix: 'admin_console' });
+  const consoleBranding = useConsoleBranding();
+  const logoUrl = getConsoleLogoUrl(consoleBranding, Theme.Light);
   const { setThemeOverride } = useContext(AppThemeContext);
   const { getTo, navigate } = useTenantPathname();
   const { data, isLoading, isOnboardingDone, update } = useOssOnboardingData();
@@ -97,7 +101,13 @@ function OssOnboarding() {
     <div className={styles.page}>
       <PageMeta titleKey="oss_onboarding.page_title" />
       <div className={styles.topbar}>
-        <Logo className={styles.logo} />
+        {isCloud ? (
+          <Logo className={styles.logo} />
+        ) : logoUrl ? (
+          <img className={styles.logo} src={logoUrl} alt={consoleBranding.brandName} />
+        ) : (
+          <span>{consoleBranding.brandName}</span>
+        )}
       </div>
       <OverlayScrollbar className={styles.contentContainer}>
         <div className={styles.content}>

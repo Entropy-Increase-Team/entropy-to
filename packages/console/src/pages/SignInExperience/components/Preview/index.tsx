@@ -37,7 +37,16 @@ function Preview({
   const [language, setLanguage] = useState<LanguageTag>('en');
   const [mode, setMode] = useState<Theme>(Theme.Light);
   const [platform, setPlatform] = useState<PreviewPlatform>(PreviewPlatform.DesktopWeb);
+  const [previewPath, setPreviewPath] = useState<'/sign-in' | '/register'>('/sign-in');
   const { languages } = useUiLanguages();
+
+  const pageOptions = useMemo<Array<{ value: '/sign-in' | '/register'; title: string }>>(
+    () => [
+      { value: '/sign-in', title: t('sign_in_exp.preview.sign_in_page') },
+      { value: '/register', title: t('sign_in_exp.preview.register_page') },
+    ],
+    [t]
+  );
 
   useEffect(() => {
     if (!signInExperience?.color.isDarkModeEnabled) {
@@ -77,6 +86,17 @@ function Preview({
           {signInExperience?.color.isDarkModeEnabled && (
             <ToggleUiThemeButton value={mode} size="small" onToggle={setMode} />
           )}
+          <Select
+            className={styles.language}
+            size="small"
+            value={previewPath}
+            options={pageOptions}
+            onChange={(value) => {
+              if (value) {
+                setPreviewPath(value);
+              }
+            }}
+          />
           <Select
             className={styles.language}
             size="small"
@@ -127,6 +147,7 @@ function Preview({
         platform={platform}
         mode={mode}
         language={language}
+        previewPath={previewPath}
         signInExperience={signInExperience}
         disabled={isPreviewIframeDisabled}
       />
