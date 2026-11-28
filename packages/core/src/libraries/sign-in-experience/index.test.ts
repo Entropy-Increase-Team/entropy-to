@@ -185,11 +185,14 @@ describe('remove unavailable social connector targets', () => {
 });
 
 describe('getAccountCenterSsrSignInExperience()', () => {
-  it('should return only sign-in experience color data', async () => {
+  it('should return sign-in experience color, appearance, branding, and hideLogtoBranding data', async () => {
     findDefaultSignInExperience.mockResolvedValueOnce(mockSignInExperience);
 
     await expect(getAccountCenterSsrSignInExperience()).resolves.toStrictEqual({
       color: mockSignInExperience.color,
+      appearance: mockSignInExperience.appearance,
+      branding: mockSignInExperience.branding,
+      hideLogtoBranding: mockSignInExperience.hideLogtoBranding,
     });
     expect(findDefaultSignInExperience).toBeCalledTimes(1);
     expect(getLogtoConnectors).not.toBeCalled();

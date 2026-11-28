@@ -45,19 +45,19 @@ describe('useBrandingEntitlements', () => {
   beforeEach(resetMockEnv);
 
   describe('outside Cloud', () => {
-    it('keeps both features locked without a license', () => {
+    it('unlocks both features by default without a license', () => {
       expect(renderWithContext({})).toStrictEqual({
-        isHideLogtoBrandingAvailable: false,
-        isHideLogtoBrandingEnabled: false,
-        isCustomUiCspEnabled: false,
+        isHideLogtoBrandingAvailable: true,
+        isHideLogtoBrandingEnabled: true,
+        isCustomUiCspEnabled: true,
       });
     });
 
-    it('uses effective entitlements even when the installed key still grants the features', () => {
+    it('uses effective entitlements from the resolved license quota', () => {
       expect(
         renderWithContext({
           ...withLicense({ hideLogtoBranding: true, bringYourUi: true }),
-          licenseQuota: ossDefaultQuota,
+          licenseQuota: { ...ossDefaultQuota, hideLogtoBranding: false, bringYourUi: false },
         })
       ).toStrictEqual({
         isHideLogtoBrandingAvailable: false,
@@ -76,13 +76,17 @@ describe('useBrandingEntitlements', () => {
       });
     });
 
-    it('unlocks each feature by its own license entitlement', () => {
-      expect(renderWithContext(withLicense({ hideLogtoBranding: true }))).toStrictEqual({
+    it('respects each feature entitlement independently', () => {
+      expect(
+        renderWithContext(withLicense({ hideLogtoBranding: true, bringYourUi: false }))
+      ).toStrictEqual({
         isHideLogtoBrandingAvailable: true,
         isHideLogtoBrandingEnabled: true,
         isCustomUiCspEnabled: false,
       });
-      expect(renderWithContext(withLicense({ bringYourUi: true }))).toStrictEqual({
+      expect(
+        renderWithContext(withLicense({ hideLogtoBranding: false, bringYourUi: true }))
+      ).toStrictEqual({
         isHideLogtoBrandingAvailable: false,
         isHideLogtoBrandingEnabled: false,
         isCustomUiCspEnabled: true,
@@ -92,6 +96,7 @@ describe('useBrandingEntitlements', () => {
     it('ignores the Cloud subscription quota', () => {
       expect(
         renderWithContext({
+          licenseQuota: { ...ossDefaultQuota, hideLogtoBranding: false, bringYourUi: false },
           currentSubscriptionQuota: { ...defaultSubscriptionQuota, bringYourUiEnabled: true },
         })
       ).toMatchObject({ isHideLogtoBrandingEnabled: false, isCustomUiCspEnabled: false });

@@ -3,7 +3,6 @@ import { builtInLanguages } from '@logto/phrases-experience';
 import type {
   AccountCenterSsrSignInExperience,
   ConnectorMetadata,
-  ForgotPasswordMethods,
   FullSignInExperience,
   LanguageInfo,
   PartialColor,
@@ -11,8 +10,8 @@ import type {
   SsoConnectorMetadata,
   SupportedSsoConnector,
 } from '@logto/schemas';
-import { adminTenantId, ConnectorType, ForgotPasswordMethod, TenantTag } from '@logto/schemas';
-import { deduplicate, trySafe, type Nullable } from '@silverhand/essentials';
+import { adminTenantId, ConnectorType, TenantTag } from '@logto/schemas';
+import { deduplicate, trySafe } from '@silverhand/essentials';
 import deepmerge from 'deepmerge';
 
 import { type WellKnownCache } from '#src/caches/well-known.js';
@@ -27,31 +26,16 @@ import type Queries from '#src/tenants/Queries.js';
 import assertThat from '#src/utils/assert-that.js';
 import { isKeyOfI18nPhrases } from '#src/utils/translation.js';
 
-import type { LogtoConnector } from '../../utils/connectors/types.js';
+import {
+  getForgotPasswordAvailability,
+  mergeInstanceBrandingFallbacks,
+  resolveInstanceSupportEmail,
+} from './branding.js';
 
 export * from './sign-up.js';
 export * from './sign-in.js';
 export * from './email-blocklist-policy.js';
-
-export const getForgotPasswordAvailability = (
-  connectors: LogtoConnector[],
-  methods: Nullable<ForgotPasswordMethods>
-): FullSignInExperience['forgotPassword'] => {
-  const hasEmailConnector = connectors.some(({ type }) => type === ConnectorType.Email);
-  const hasSmsConnector = connectors.some(({ type }) => type === ConnectorType.Sms);
-
-  if (!methods) {
-    return {
-      email: hasEmailConnector,
-      phone: hasSmsConnector,
-    };
-  }
-
-  return {
-    email: methods.includes(ForgotPasswordMethod.EmailVerificationCode) && hasEmailConnector,
-    phone: methods.includes(ForgotPasswordMethod.PhoneVerificationCode) && hasSmsConnector,
-  };
-};
+export { getForgotPasswordAvailability } from './branding.js';
 
 type SignInExperienceOverride = Partial<Omit<SignInExperience, 'color'> & { color: PartialColor }>;
 
@@ -178,16 +162,17 @@ export const createSignInExperienceLibrary = (
     }
     const organization = await trySafe(organizations.findById(organizationId));
 
-    const { branding, color, customCss } = organization ?? {};
+    const { branding, color, appearance, customCss } = organization ?? {};
 
     return {
       ...(branding && { branding }),
       ...(color && { color }),
+      ...(appearance && Object.keys(appearance).length > 0 && { appearance }),
       ...(customCss && { customCss }),
     };
   };
 
-  /** Get the branding and color from the app sign-in experience if it is not a third-party app. */
+  /** Get the branding, color, appearance, and customCss from the app sign-in experience if it is not a third-party app. */
   const findApplicationSignInExperience = async (
     appId?: string
   ): Promise<SignInExperienceOverride> => {
@@ -197,7 +182,7 @@ export const createSignInExperienceLibrary = (
 
     const found = await safeFindSignInExperienceByApplicationId(appId);
 
-    const { isThirdParty, branding, color, customCss } = found ?? {};
+    const { isThirdParty, branding, color, appearance, customCss } = found ?? {};
 
     if (isThirdParty) {
       return {};
@@ -206,6 +191,7 @@ export const createSignInExperienceLibrary = (
     return {
       ...(branding && { branding }),
       ...(color && { color }),
+      ...(appearance && Object.keys(appearance).length > 0 && { appearance }),
       ...(customCss && { customCss }),
     };
   };
@@ -370,6 +356,8 @@ export const createSignInExperienceLibrary = (
 
     return {
       ...publicSignInExperience,
+      branding: mergeInstanceBrandingFallbacks(publicSignInExperience.branding),
+      supportEmail: resolveInstanceSupportEmail(publicSignInExperience.supportEmail),
       hideLogtoBranding,
       socialConnectors,
       ssoConnectors,
@@ -384,9 +372,10 @@ export const createSignInExperienceLibrary = (
 
   const getAccountCenterSsrSignInExperience =
     async (): Promise<AccountCenterSsrSignInExperience> => {
-      const { color } = await findDefaultSignInExperience();
+      const { color, appearance, branding, hideLogtoBranding } =
+        await findDefaultSignInExperience();
 
-      return { color };
+      return { color, appearance, branding, hideLogtoBranding };
     };
 
   /**

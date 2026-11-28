@@ -1,20 +1,18 @@
-import { isKeyInObject, trySafe } from '@silverhand/essentials';
 import classNames from 'classnames';
-import { useEffect, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useRef, useState } from 'react';
 
 import ContactIcon from '@/assets/icons/contact-us.svg?react';
 import CubeIcon from '@/assets/icons/cube.svg?react';
 import DocumentIcon from '@/assets/icons/document-nav-button.svg?react';
 import CloudLogo from '@/assets/images/cloud-logo.svg?react';
-import Logo from '@/assets/images/logo.svg?react';
-import { githubReleasesLink } from '@/consts';
 import { isCloud } from '@/consts/env';
 import DynamicT from '@/ds-components/DynamicT';
 import Spacer from '@/ds-components/Spacer';
 import TextLink from '@/ds-components/TextLink';
+import useConsoleBranding, { getConsoleLogoUrl } from '@/hooks/use-console-branding';
 import useDocumentationUrl from '@/hooks/use-documentation-url';
 import useTenantPathname from '@/hooks/use-tenant-pathname';
+import useTheme from '@/hooks/use-theme';
 import { onKeyDownHandler } from '@/utils/a11y';
 
 import ContactModal from './ContactModal';
@@ -23,7 +21,7 @@ import InkeepAskAi from './InkeepAskAi';
 import TenantSelector from './TenantSelector';
 import UserInfo from './UserInfo';
 import styles from './index.module.scss';
-import { currentVersion, isGreaterThanCurrentVersion } from './utils';
+import { currentVersion } from './utils';
 
 type Props = {
   readonly className?: string;
@@ -34,31 +32,47 @@ type Props = {
 };
 
 function Topbar({ className, hideTenantSelector, hideTitle }: Props) {
-  const { t } = useTranslation(undefined, { keyPrefix: 'admin_console' });
   const { navigate } = useTenantPathname();
-  const LogtoLogo = isCloud ? CloudLogo : Logo;
+  const theme = useTheme();
+  const consoleBranding = useConsoleBranding();
+  const logoUrl = getConsoleLogoUrl(consoleBranding, theme);
 
   return (
     <div className={classNames(styles.topbar, className)}>
-      <LogtoLogo
-        className={styles.logo}
-        onClick={() => {
-          navigate('/');
-        }}
-      />
-      {isCloud && !hideTenantSelector && <TenantSelector />}
-      {!isCloud && !hideTitle && (
-        <>
-          <div className={styles.line} />
-          <div className={styles.text}>{t('title')}</div>
-        </>
+      {isCloud ? (
+        <CloudLogo
+          className={styles.logo}
+          onClick={() => {
+            navigate('/');
+          }}
+        />
+      ) : (
+        <button
+          type="button"
+          className={styles.brandButton}
+          onClick={() => {
+            navigate('/');
+          }}
+        >
+          {logoUrl && <img className={styles.logo} src={logoUrl} alt={consoleBranding.brandName} />}
+          {!hideTitle && <span className={styles.text}>{consoleBranding.brandName}</span>}
+        </button>
       )}
+      {isCloud && !hideTenantSelector && <TenantSelector />}
       <Spacer />
       {isCloud && <InkeepAskAi className={styles.button} />}
       {isCloud && <EnterpriseSubscriptions className={styles.button} />}
-      <DocumentButton />
-      <HelpButton />
-      {!isCloud && <VersionButton />}
+      {(isCloud || Boolean(consoleBranding.docsUrl)) && (
+        <DocumentButton customDocsUrl={consoleBranding.docsUrl} />
+      )}
+      {isCloud ? (
+        <HelpButton />
+      ) : (
+        Boolean(consoleBranding.supportEmail) && (
+          <SupportEmailButton email={consoleBranding.supportEmail} />
+        )
+      )}
+      {!isCloud && <VersionBadge />}
       <UserInfo />
     </div>
   );
@@ -66,16 +80,30 @@ function Topbar({ className, hideTenantSelector, hideTitle }: Props) {
 
 export default Topbar;
 
-function DocumentButton() {
+function DocumentButton({ customDocsUrl }: { readonly customDocsUrl?: string }) {
   const { documentationSiteUrl } = useDocumentationUrl();
+  const href = customDocsUrl ?? documentationSiteUrl;
+
   return (
     <TextLink
-      href={documentationSiteUrl}
+      href={href}
       targetBlank="noopener"
       className={styles.button}
       icon={<DocumentIcon className={styles.icon} />}
     >
       <DynamicT forKey="topbar.docs" />
+    </TextLink>
+  );
+}
+
+function SupportEmailButton({ email }: { readonly email: string }) {
+  return (
+    <TextLink
+      href={`mailto:${email}`}
+      className={styles.button}
+      icon={<ContactIcon className={styles.icon} />}
+    >
+      <DynamicT forKey="topbar.help" />
     </TextLink>
   );
 }
@@ -113,40 +141,10 @@ function HelpButton() {
   );
 }
 
-function VersionButton() {
-  const [isNewVersionAvailable, setIsNewVersionAvailable] = useState(false);
-
-  useEffect(() => {
-    void trySafe(
-      async () => {
-        const response = await fetch('https://numbers.logto.io/pull.json');
-        const json = await response.json();
-        if (
-          !isKeyInObject(json, 'latestRelease') ||
-          typeof json.latestRelease !== 'string' ||
-          !json.latestRelease.startsWith('v')
-        ) {
-          return;
-        }
-        if (isGreaterThanCurrentVersion(json.latestRelease)) {
-          setIsNewVersionAvailable(true);
-        }
-      },
-      (error) => {
-        console.warn('Failed to check for new version', error);
-      }
-    );
-  }, []);
-
+function VersionBadge() {
   return (
-    <TextLink
-      href={githubReleasesLink}
-      targetBlank="noopener"
-      className={styles.button}
-      icon={<CubeIcon className={styles.icon} />}
-    >
-      v{currentVersion}
-      {isNewVersionAvailable && <div className={styles.newVersionDot} />}
-    </TextLink>
+    <span className={styles.versionBadge}>
+      <CubeIcon className={styles.icon} />v{currentVersion}
+    </span>
   );
 }

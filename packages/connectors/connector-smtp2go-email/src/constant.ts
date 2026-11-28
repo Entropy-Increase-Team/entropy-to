@@ -41,7 +41,7 @@ export const defaultMetadata: ConnectorMetadata = {
       label: 'Sender Name',
       type: ConnectorConfigFormItemType.Text,
       required: false,
-      placeholder: 'Logto',
+      placeholder: 'Your Brand',
     },
     {
       key: 'templates',
@@ -52,65 +52,65 @@ export const defaultMetadata: ConnectorMetadata = {
         {
           usageType: 'SignIn',
           type: 'text/plain',
-          subject: 'Logto Sign-In Verification Code',
+          subject: 'Sign-In Verification Code',
           content:
-            'Your Logto sign-in verification code is {{code}}. The code will remain active for 10 minutes.',
+            'Your sign-in verification code is {{code}}. The code will remain active for 10 minutes.',
         },
         {
           usageType: 'Register',
           type: 'text/plain',
-          subject: 'Logto Registration Verification Code',
+          subject: 'Registration Verification Code',
           content:
-            'Your Logto sign-up verification code is {{code}}. The code will remain active for 10 minutes.',
+            'Your sign-up verification code is {{code}}. The code will remain active for 10 minutes.',
         },
         {
           usageType: 'ForgotPassword',
           type: 'text/plain',
-          subject: 'Logto Password Reset Verification Code',
+          subject: 'Password Reset Verification Code',
           content:
-            'Your Logto password reset verification code is {{code}}. The code will remain active for 10 minutes.',
+            'Your password reset verification code is {{code}}. The code will remain active for 10 minutes.',
         },
         {
           usageType: 'OrganizationInvitation',
           type: 'text/plain',
-          subject: 'Logto Organization Invitation',
+          subject: 'Organization Invitation',
           content:
             'You have been invited to join an organization. Your invitation link is {{link}}.',
         },
         {
           usageType: 'Generic',
           type: 'text/plain',
-          subject: 'Logto Verification Code',
+          subject: 'Verification Code',
           content:
-            'Your Logto verification code is {{code}}. The code will remain active for 10 minutes.',
+            'Your verification code is {{code}}. The code will remain active for 10 minutes.',
         },
         {
           usageType: 'UserPermissionValidation',
           type: 'text/plain',
-          subject: 'Logto Permission Validation Code',
+          subject: 'Permission Validation Code',
           content:
-            'Your Logto permission validation code is {{code}}. The code will remain active for 10 minutes.',
+            'Your permission validation code is {{code}}. The code will remain active for 10 minutes.',
         },
         {
           usageType: 'BindNewIdentifier',
           type: 'text/plain',
-          subject: 'Logto New Identifier Binding Code',
+          subject: 'New Identifier Binding Code',
           content:
-            'Your Logto new identifier binding code is {{code}}. The code will remain active for 10 minutes.',
+            'Your new identifier binding code is {{code}}. The code will remain active for 10 minutes.',
         },
         {
           usageType: 'MfaVerification',
           type: 'text/plain',
-          subject: 'Logto MFA Verification Code',
+          subject: 'MFA Verification Code',
           content:
-            'Your Logto MFA verification code is {{code}}. The code will remain active for 10 minutes.',
+            'Your MFA verification code is {{code}}. The code will remain active for 10 minutes.',
         },
         {
           usageType: 'BindMfa',
           type: 'text/plain',
-          subject: 'Logto 2-Step Verification Setup Code',
+          subject: '2-Step Verification Setup Code',
           content:
-            'Your Logto 2-step verification setup code is {{code}}. The code will remain active for 10 minutes.',
+            'Your 2-step verification setup code is {{code}}. The code will remain active for 10 minutes.',
         },
       ],
     },

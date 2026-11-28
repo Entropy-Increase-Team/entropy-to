@@ -59,6 +59,7 @@ export const mockSignInExperienceSettings = {
   branding: {
     logoUrl: 'https://example.com/logo.png',
   },
+  appearance: {},
   hideLogtoBranding: false,
   languageInfo: {
     autoDetect: true,

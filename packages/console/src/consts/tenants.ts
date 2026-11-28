@@ -171,7 +171,7 @@ const getAdminTenantEndpoint = () => {
 
 export const adminTenantEndpoint = getAdminTenantEndpoint();
 
-export const mainTitle = isCloud ? 'Logto Cloud' : 'Logto Console';
+export const mainTitle = isCloud ? 'Logto Cloud' : '熵增账号中心';
 
 // The threshold days to show the convert to production card in the get started page
 export const convertToProductionThresholdDays = 7;

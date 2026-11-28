@@ -1,5 +1,11 @@
 import { generateDarkColor } from '@logto/core-kit';
-import { Theme, type Organization } from '@logto/schemas';
+import {
+  Theme,
+  type AppearanceBackgroundType,
+  type AppearanceLayout,
+  type AppearancePreset,
+  type Organization,
+} from '@logto/schemas';
 import { useCallback, useMemo } from 'react';
 import { useForm, FormProvider, Controller } from 'react-hook-form';
 import { toast } from 'react-hot-toast';
@@ -15,6 +21,7 @@ import { organizationBrandingLink } from '@/consts';
 import Button from '@/ds-components/Button';
 import ColorPicker from '@/ds-components/ColorPicker';
 import FormField from '@/ds-components/FormField';
+import Select from '@/ds-components/Select';
 import Switch from '@/ds-components/Switch';
 import useApi from '@/hooks/use-api';
 import useCurrentTenantScopes from '@/hooks/use-current-tenant-scopes';
@@ -26,7 +33,10 @@ import { assembleData, normalizeData } from '../utils';
 
 import styles from './index.module.scss';
 
-type OrganizationBrandingForm = Pick<Organization, 'branding' | 'color' | 'customCss'> & {
+type OrganizationBrandingForm = Pick<
+  Organization,
+  'branding' | 'color' | 'appearance' | 'customCss'
+> & {
   isBrandingEnabled: boolean;
 };
 
@@ -44,6 +54,7 @@ function Branding() {
       isBrandingEnabled:
         Object.keys(data.branding).length > 0 ||
         Object.keys(data.color).length > 0 ||
+        Object.keys(data.appearance).length > 0 ||
         Boolean(data.customCss),
     },
   });
@@ -83,6 +94,39 @@ function Branding() {
   const handleResetColor = useCallback(() => {
     setValue('color.darkPrimaryColor', calculatedDarkPrimaryColor, { shouldDirty: true });
   }, [calculatedDarkPrimaryColor, setValue]);
+
+  const presetOptions = useMemo<Array<{ value: '' | AppearancePreset; title: string }>>(
+    () => [
+      { value: '', title: t('sign_in_exp.appearance.inherit_tenant') },
+      { value: 'entropy', title: t('sign_in_exp.appearance.preset_entropy') },
+      { value: 'classic', title: t('sign_in_exp.appearance.preset_classic') },
+      { value: 'minimal', title: t('sign_in_exp.appearance.preset_minimal') },
+    ],
+    [t]
+  );
+
+  const layoutOptions = useMemo<Array<{ value: '' | AppearanceLayout; title: string }>>(
+    () => [
+      { value: '', title: t('sign_in_exp.appearance.inherit_tenant') },
+      { value: 'centered', title: t('sign_in_exp.appearance.layout_centered') },
+      { value: 'framed', title: t('sign_in_exp.appearance.layout_framed') },
+      { value: 'split-left', title: t('sign_in_exp.appearance.layout_split_left') },
+      { value: 'split-right', title: t('sign_in_exp.appearance.layout_split_right') },
+      { value: 'minimal', title: t('sign_in_exp.appearance.layout_minimal') },
+    ],
+    [t]
+  );
+
+  const backgroundOptions = useMemo<Array<{ value: '' | AppearanceBackgroundType; title: string }>>(
+    () => [
+      { value: '', title: t('sign_in_exp.appearance.inherit_tenant') },
+      { value: 'tech-grid', title: t('sign_in_exp.appearance.bg_tech_grid') },
+      { value: 'solid', title: t('sign_in_exp.appearance.bg_solid') },
+      { value: 'subtle-gradient', title: t('sign_in_exp.appearance.bg_subtle_gradient') },
+      { value: 'image', title: t('sign_in_exp.appearance.bg_image') },
+    ],
+    [t]
+  );
 
   return (
     <FormProvider {...formMethods}>
@@ -159,6 +203,51 @@ function Branding() {
                   />
                 </div>
               )}
+              <FormField title="sign_in_exp.appearance.preset">
+                <Controller
+                  control={control}
+                  name="appearance.preset"
+                  render={({ field: { value, onChange } }) => (
+                    <Select
+                      value={value ?? ''}
+                      options={presetOptions}
+                      onChange={(nextValue) => {
+                        onChange(nextValue === '' ? undefined : nextValue);
+                      }}
+                    />
+                  )}
+                />
+              </FormField>
+              <FormField title="sign_in_exp.appearance.layout">
+                <Controller
+                  control={control}
+                  name="appearance.layout"
+                  render={({ field: { value, onChange } }) => (
+                    <Select
+                      value={value ?? ''}
+                      options={layoutOptions}
+                      onChange={(nextValue) => {
+                        onChange(nextValue === '' ? undefined : nextValue);
+                      }}
+                    />
+                  )}
+                />
+              </FormField>
+              <FormField title="sign_in_exp.appearance.background">
+                <Controller
+                  control={control}
+                  name="appearance.background.type"
+                  render={({ field: { value, onChange } }) => (
+                    <Select
+                      value={value ?? ''}
+                      options={backgroundOptions}
+                      onChange={(nextValue) => {
+                        onChange(nextValue === '' ? undefined : nextValue);
+                      }}
+                    />
+                  )}
+                />
+              </FormField>
               <CustomCssEditorField />
             </>
           )}

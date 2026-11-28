@@ -5,15 +5,187 @@
   position: absolute;
   inset: 0;
   overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.backgroundLayer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Precision subtle 28px neutral engineering grid with radial vignette mask */
+.techGrid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, var(--color-line-divider) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-line-divider) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(ellipse 76% 68% at 50% 42%, #000 32%, transparent 100%);
+  opacity: 65%;
+}
+
+.subtleGradient {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(640px circle at 18% 12%, color-mix(in srgb, var(--color-ring) 10%, transparent), transparent 65%),
+    radial-gradient(560px circle at 84% 88%, color-mix(in srgb, var(--color-brand-default) 8%, transparent), transparent 68%);
+}
+
+.backgroundImage {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.backgroundOverlay {
+  position: absolute;
+  inset: 0;
+  background: var(--color-bg-float-base);
+  opacity: var(--bg-image-overlay-opacity, 45%);
 }
 
 .container {
-  min-height: 100%;
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
   @include _.flex_column(center, center);
 }
 
 .main {
   @include _.flex_column;
+}
+
+.frameOuter {
+  padding: _.unit(1);
+  border-radius: calc(var(--radius-card, 20px) + 4px);
+  background: var(--color-surface-subtle, var(--color-surface));
+  border: 1px solid var(--color-line-border);
+  box-shadow: var(--color-shadow-card);
+}
+
+/* Split layout */
+.splitContainer {
+  padding: 0;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+.splitGrid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  min-height: 100%;
+  width: 100%;
+}
+
+.heroPanel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: _.unit(12) _.unit(10);
+  background: var(--color-surface-subtle, var(--color-surface));
+  border-inline-end: 1px solid var(--color-line-divider);
+  overflow: hidden;
+}
+
+.heroGridBackdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, var(--color-line-divider) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-line-divider) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(ellipse 85% 80% at 30% 40%, #000 24%, transparent 100%);
+  opacity: 55%;
+}
+
+.heroContent {
+  position: relative;
+  z-index: 1;
+  max-width: 440px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: _.unit(4);
+}
+
+.heroBadge {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  padding: _.unit(1) _.unit(2.5);
+  border-radius: 9999px;
+  border: 1px solid var(--color-line-border);
+  background: var(--color-bg-float);
+  font: var(--font-label-3);
+  color: var(--color-type-secondary);
+}
+
+.heroLogo {
+  height: 36px;
+  width: auto;
+  max-width: 160px;
+  object-fit: contain;
+  align-self: flex-start;
+}
+
+.heroTitle {
+  margin: 0;
+  font: var(--font-headline-1);
+  letter-spacing: -0.03em;
+  color: var(--color-type-primary);
+}
+
+.heroDescription {
+  margin: 0;
+  font: var(--font-body-1);
+  color: var(--color-type-secondary);
+  line-height: 1.65;
+}
+
+.heroMedia {
+  margin-top: _.unit(2);
+  border-radius: var(--radius-card, 16px);
+  overflow: hidden;
+  border: 1px solid var(--color-line-border);
+  background: var(--color-bg-float);
+}
+
+.heroImage {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 260px;
+  object-fit: cover;
+}
+
+.authPanel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: _.unit(8) _.unit(6);
+}
+
+.splitRight .heroPanel {
+  order: 2;
+  border-inline-end: none;
+  border-inline-start: 1px solid var(--color-line-divider);
+}
+
+.splitRight .authPanel {
+  order: 1;
 }
 
 :global(body.mobile) {
@@ -30,31 +202,68 @@
   }
 
   .signature {
-    margin: _.unit(10) 0 _.unit(2);
+    margin: _.unit(8) 0 _.unit(2);
   }
 }
 
 :global(body.desktop) {
   .container {
-    padding: _.unit(5);
+    padding: _.unit(6) _.unit(5) _.unit(12);
+  }
+
+  .splitContainer {
+    padding: 0;
   }
 
   .main {
-    width: 540px;
-    min-height: 540px;
+    width: var(--card-outer-width, 480px);
+    min-height: 480px;
     position: relative;
-    padding: _.unit(6);
-    border-radius: 16px;
+    padding: _.unit(7) _.unit(6);
+    border-radius: var(--radius-card, 20px);
     background: var(--color-bg-float);
-    box-shadow: var(--color-shadow-2);
+    border: 1px solid var(--color-line-border);
+    box-shadow: var(--color-shadow-card);
+  }
+
+  .framedMain {
+    box-shadow: none;
+    border-color: var(--color-line-divider);
+  }
+
+  .minimalMain {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    min-height: auto;
+  }
+
+  .splitMain {
+    width: min(100%, var(--card-outer-width, 460px));
+    min-height: auto;
   }
 
   .signature {
     position: absolute;
     bottom: 0;
-    transform: translateY(calc(100% + _.unit(7)));
-    // Have to use padding instead of margin. Overflow margin spacing will be ignored by the browser.
-    padding-bottom: _.unit(7);
+    left: 50%;
+    transform: translate(-50%, calc(100% + _.unit(5)));
+    padding-bottom: _.unit(6);
+    white-space: nowrap;
+  }
+
+  @media only screen and (max-width: 900px) {
+    .splitGrid {
+      grid-template-columns: 1fr;
+    }
+
+    .heroPanel {
+      display: none;
+    }
+
+    .authPanel {
+      padding: _.unit(6) _.unit(5) _.unit(12);
+    }
   }
 
   @media only screen and (max-width: 580px) {
@@ -62,5 +271,15 @@
       align-self: stretch;
       width: auto;
     }
+
+    .frameOuter {
+      align-self: stretch;
+    }
+  }
+}
+
+:global(html[data-theme='light'] body.desktop) {
+  .main:not(.minimalMain) {
+    background-clip: padding-box;
   }
 }

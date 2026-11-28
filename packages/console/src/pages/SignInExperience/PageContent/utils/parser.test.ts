@@ -23,6 +23,7 @@ const mockSignInExperience: SignInExperience = {
   branding: {
     logoUrl: 'https://logto.dev/logo.svg',
   },
+  appearance: {},
   hideLogtoBranding: false,
   termsOfUseUrl: null,
   privacyPolicyUrl: null,

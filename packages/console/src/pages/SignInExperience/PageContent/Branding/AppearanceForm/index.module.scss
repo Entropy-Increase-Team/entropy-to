@@ -1,0 +1,119 @@
+@use '@/scss/underscore' as _;
+
+.presetGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: _.unit(3);
+}
+
+.presetCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: _.unit(2);
+  padding: _.unit(3);
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-layer-1);
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: start;
+  transition: border-color 150ms ease, background-color 150ms ease;
+
+  &:disabled {
+    opacity: 60%;
+    cursor: not-allowed;
+  }
+
+  &:hover:not(:disabled) {
+    border-color: var(--color-primary);
+  }
+
+  &.selected {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 1px var(--color-primary);
+    background: var(--color-layer-2);
+  }
+}
+
+.presetSwatch {
+  width: 100%;
+  height: 54px;
+  border-radius: 6px;
+  border: 1px solid var(--color-divider);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: _.unit(2);
+}
+
+.swatchCard {
+  width: 56%;
+  height: 100%;
+  border-radius: 5px;
+  border: 1px solid;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 5px;
+}
+
+.swatchButton {
+  width: 72%;
+  height: 7px;
+  border-radius: 3px;
+}
+
+.presetTitle {
+  font: var(--font-label-2);
+  color: var(--color-text);
+}
+
+.presetDescription {
+  font: var(--font-body-2);
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.twoColumns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: _.unit(4);
+}
+
+.threeColumns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: _.unit(3);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: _.unit(3);
+}
+
+.subSection {
+  margin-top: _.unit(4);
+  padding-top: _.unit(4);
+  border-top: 1px solid var(--color-divider);
+  display: flex;
+  flex-direction: column;
+  gap: _.unit(4);
+}
+
+.subSectionTitle {
+  font: var(--font-label-2);
+  color: var(--color-text);
+}
+
+@media only screen and (max-width: 1120px) {
+  .presetGrid,
+  .threeColumns {
+    grid-template-columns: 1fr;
+  }
+
+  .twoColumns {
+    grid-template-columns: 1fr;
+  }
+}

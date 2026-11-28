@@ -52,7 +52,7 @@ describe('sendWebhookRequest', () => {
     expect(post.mock.calls[0]?.[0]).toBe(mockUrl);
     expect(post.mock.calls[0]?.[1]).toMatchObject({
       headers: {
-        'user-agent': 'Logto (https://logto.io/)',
+        'user-agent': 'EntropyAuth',
         foo: 'bar',
         'logto-signature-sha-256': mockSignature,
       },
@@ -91,7 +91,7 @@ describe('sendWebhookRequest', () => {
     expect(post.mock.lastCall?.[1]).toMatchObject({
       fetch: ssrfProtectedFetch,
       headers: {
-        'user-agent': 'Logto (https://logto.io/)',
+        'user-agent': 'EntropyAuth',
         'logto-signature-sha-256': mockSignature,
       },
       json: testPayload,
@@ -127,7 +127,7 @@ describe('sendWebhookRequest', () => {
     expect(post.mock.lastCall?.[1]).toMatchObject({
       body: rawBody,
       headers: {
-        'user-agent': 'Logto (https://logto.io/)',
+        'user-agent': 'EntropyAuth',
         'content-type': 'application/json',
         foo: 'bar',
         'logto-signature-sha-256': mockSignature,
@@ -150,7 +150,7 @@ describe('sendWebhookRequest', () => {
 
     const requestOptions = post.mock.lastCall?.[1] as { headers?: Record<string, string> };
     expect(requestOptions.headers).toEqual({
-      'user-agent': 'Logto (https://logto.io/)',
+      'user-agent': 'EntropyAuth',
       'Content-Type': 'application/cloudevents+json',
       'logto-signature-sha-256': mockSignature,
     });

@@ -97,4 +97,43 @@ export default function wellKnownRoutes<T extends AnonymousRouter>(
       return next();
     }
   );
+
+  router.get(
+    '/.well-known/console-branding',
+    koaGuard({
+      response: z.object({
+        brandName: z.string(),
+        logoUrl: z.string().optional(),
+        darkLogoUrl: z.string().optional(),
+        faviconUrl: z.string().optional(),
+        websiteUrl: z.string().optional(),
+        docsUrl: z.string().optional(),
+        supportEmail: z.string().optional(),
+      }),
+      status: 200,
+    }),
+    async (ctx, next) => {
+      const {
+        brandName,
+        brandLogoUrl,
+        brandDarkLogoUrl,
+        brandFaviconUrl,
+        brandWebsiteUrl,
+        brandDocsUrl,
+        brandSupportEmail,
+      } = EnvSet.values;
+
+      ctx.body = {
+        brandName,
+        ...(brandLogoUrl && { logoUrl: brandLogoUrl }),
+        ...(brandDarkLogoUrl && { darkLogoUrl: brandDarkLogoUrl }),
+        ...(brandFaviconUrl && { faviconUrl: brandFaviconUrl }),
+        ...(brandWebsiteUrl && { websiteUrl: brandWebsiteUrl }),
+        ...(brandDocsUrl && { docsUrl: brandDocsUrl }),
+        ...(brandSupportEmail && { supportEmail: brandSupportEmail }),
+      };
+
+      return next();
+    }
+  );
 }

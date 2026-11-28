@@ -18,13 +18,16 @@
                 "schema": {
                   "properties": {
                     "color": {
-                      "description": "The primary branding color for the sign-in page (both light/dark mode)."
+                      "description": "The primary branding color, optional link accent color, and foreground overrides for the sign-in page (both light/dark mode)."
+                    },
+                    "appearance": {
+                      "description": "Structured design system configuration (preset, layout, top bar, background, hero panel, card/control radii, shadows, typography, and motion)."
                     },
                     "languageInfo": {
                       "description": "The language detection policy for the sign-in page."
                     },
                     "hideLogtoBranding": {
-                      "description": "Cloud only. Whether to hide the Logto branding on hosted sign-in pages."
+                      "description": "Whether to hide the legacy Logto branding signature on hosted sign-in pages."
                     },
                     "ssoBrandingBeforeEmailMatch": {
                       "description": "Whether to include SSO connector branding (display name and logos) in the public sign-in experience before an email domain matches. Defaults to true."
@@ -152,13 +155,16 @@
               "schema": {
                 "properties": {
                   "color": {
-                    "description": "Specify the primary branding color for the sign-in page (both light/dark mode)."
+                    "description": "Specify the primary branding color, optional link accent color, and foreground overrides for the sign-in page (both light/dark mode)."
+                  },
+                  "appearance": {
+                    "description": "Configure the structured sign-in page design system (preset, layout, top bar, background, hero panel, surface radii/shadows, typography, and motion)."
                   },
                   "languageInfo": {
                     "description": "Control the language detection policy for the sign-in page."
                   },
                   "hideLogtoBranding": {
-                    "description": "Cloud only. Whether to hide the Logto branding on hosted sign-in pages."
+                    "description": "Whether to hide the legacy Logto branding signature on hosted sign-in pages."
                   },
                   "ssoBrandingBeforeEmailMatch": {
                     "description": "Whether to include SSO connector branding (display name and logos) in the public sign-in experience before an email domain matches. Defaults to true."

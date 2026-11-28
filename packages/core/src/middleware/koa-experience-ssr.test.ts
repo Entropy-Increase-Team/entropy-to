@@ -251,7 +251,8 @@ describe('koaExperienceSsr()', () => {
     expect(ctx.body.match(/<\/script>/g)).toHaveLength(1);
 
     // And the `$'` must round-trip unchanged — it is data, not a replacement pattern.
-    const serialized = /Object\.freeze\((?<json>[\S\s]+)\);/.exec(ctx.body)?.groups?.json;
+    const serialized = /Object\.freeze\((?<json>[\S\s]+?)\);<\/script>/.exec(ctx.body)?.groups
+      ?.json;
     expect(serialized).toBeTruthy();
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- test parses known JSON
     const parsed = JSON.parse(serialized!);
@@ -272,7 +273,8 @@ describe('koaExperienceSsr()', () => {
 
     // The `\uXXXX` escapes must decode back to the original characters when parsed, so the escaping is
     // safe (no data corruption) while still preventing tag breakout.
-    const serialized = /Object\.freeze\((?<json>[\S\s]+)\);/.exec(ctx.body)?.groups?.json;
+    const serialized = /Object\.freeze\((?<json>[\S\s]+?)\);<\/script>/.exec(ctx.body)?.groups
+      ?.json;
     expect(serialized).toBeTruthy();
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- test parses known JSON
@@ -303,7 +305,8 @@ describe('koaExperienceSsr()', () => {
     expect(ctx.body).toContain('\\u2029');
 
     // The escaped form must still decode back to the original once parsed.
-    const serialized = /Object\.freeze\((?<json>[\S\s]+)\);/.exec(ctx.body)?.groups?.json;
+    const serialized = /Object\.freeze\((?<json>[\S\s]+?)\);<\/script>/.exec(ctx.body)?.groups
+      ?.json;
     expect(serialized).toBeTruthy();
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- test parses known JSON
     const parsed = JSON.parse(serialized!);
@@ -346,5 +349,34 @@ describe('koaExperienceSsr()', () => {
     await koaExperienceSsr(tenant.libraries, tenant.queries)(ctx, next);
 
     expect(ctx.body).not.toContain('<style data-custom-css>');
+  });
+
+  it('should inject appearance CSS tokens, font stylesheet, favicon, and SSR title outside preview', async () => {
+    (tenant.libraries.signInExperiences.getFullSignInExperience as jest.Mock).mockResolvedValueOnce(
+      {
+        ...mockSignInExperience,
+        branding: {
+          brandName: '熵增账号中心',
+          favicon: 'https://cdn.example.com/favicon.png',
+        },
+        appearance: {
+          preset: 'entropy',
+        },
+      }
+    );
+
+    const ctx = {
+      ...baseCtx,
+      path: '/',
+      body: `<head><title></title><script>const logtoSsr=${ssrPlaceholder};</script></head>`,
+    };
+    await koaExperienceSsr(tenant.libraries, tenant.queries)(ctx, next);
+
+    expect(ctx.body).toContain('<title>熵增账号中心</title>');
+    expect(ctx.body).toContain('data-ssr-favicon');
+    expect(ctx.body).toContain('data-appearance-font');
+    expect(ctx.body).toContain('<style data-appearance-tokens>');
+    expect(ctx.body).toContain('--color-bg-float-base: #f4f4f6;');
+    expect(ctx.body).toContain('--color-bg-float: #161920;');
   });
 });

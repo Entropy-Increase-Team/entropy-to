@@ -14,6 +14,7 @@ import { type Context } from 'koa';
 import { type IRouterParamContext } from 'koa-router';
 import ky, { HTTPError, type KyResponse } from 'ky';
 
+import { EnvSet } from '#src/env-set/index.js';
 import { ssrfProtectedFetch } from '#src/utils/outbound-request.js';
 import { sign } from '#src/utils/sign.js';
 
@@ -87,6 +88,18 @@ const abortRetryOnNonHttpError = ({ error }: { error: Error }) => {
   }
 };
 
+const buildWebhookUserAgent = () => {
+  const rawName = EnvSet.values.brandName;
+  const asciiName = /^[\u0021-\u007E]+(?: [\u0021-\u007E]+)*$/.test(rawName)
+    ? rawName
+    : 'EntropyAuth';
+  const website = EnvSet.values.brandWebsiteUrl;
+
+  return website && /^https?:\/\/[\u0021-\u007E]+$/.test(website)
+    ? `${asciiName} (${website})`
+    : asciiName;
+};
+
 export const sendWebhookRequest = async (request: SendWebhookRequest) => {
   const { hookConfig, signingKey, signal } = request;
   const { url, headers, retries } = hookConfig;
@@ -97,7 +110,7 @@ export const sendWebhookRequest = async (request: SendWebhookRequest) => {
 
   return ky.post(url, {
     headers: {
-      'user-agent': 'Logto (https://logto.io/)',
+      'user-agent': buildWebhookUserAgent(),
       ...conditional(
         request.body !== undefined && !hasContentType && { 'content-type': 'application/json' }
       ),

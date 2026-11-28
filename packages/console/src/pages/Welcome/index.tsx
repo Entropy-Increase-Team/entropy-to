@@ -4,7 +4,9 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import Logo from '@/assets/images/logo.svg?react';
+import { isCloud } from '@/consts/env';
 import Button from '@/ds-components/Button';
+import useConsoleBranding, { getConsoleLogoUrl } from '@/hooks/use-console-branding';
 import useRedirectUri from '@/hooks/use-redirect-uri';
 import useTenantPathname from '@/hooks/use-tenant-pathname';
 import useTheme from '@/hooks/use-theme';
@@ -16,6 +18,8 @@ function Welcome() {
   const { navigate } = useTenantPathname();
   const { isAuthenticated, signIn } = useLogto();
   const theme = useTheme();
+  const consoleBranding = useConsoleBranding();
+  const logoUrl = getConsoleLogoUrl(consoleBranding, theme);
   const redirectUri = useRedirectUri();
 
   useEffect(() => {
@@ -28,7 +32,13 @@ function Welcome() {
   return (
     <div className={classNames(styles.container, styles[theme])}>
       <div className={styles.header}>
-        <Logo className={styles.logo} />
+        {isCloud ? (
+          <Logo className={styles.logo} />
+        ) : logoUrl ? (
+          <img className={styles.logo} src={logoUrl} alt={consoleBranding.brandName} />
+        ) : (
+          <span className={styles.brandText}>{consoleBranding.brandName}</span>
+        )}
       </div>
       <main>
         <div className={styles.placeholderTop} />

@@ -3,6 +3,7 @@ import {
   Theme,
   ConnectorType,
   ForgotPasswordMethod,
+  resolveSignInExperienceAppearance,
   signInExperiencePreviewMessageSender,
 } from '@logto/schemas';
 import type { ConnectorMetadata, ConnectorResponse } from '@logto/schemas';
@@ -28,6 +29,7 @@ type Props = {
   readonly platform: PreviewPlatform;
   readonly mode: Theme;
   readonly language?: LanguageTag;
+  readonly previewPath?: '/sign-in' | '/register';
   readonly signInExperience?: SignInExperiencePageManagedData;
   /**
    * The Logto endpoint to use for the preview. If not provided, the current tenant endpoint from
@@ -46,6 +48,7 @@ function SignInExperiencePreview({
   platform,
   mode,
   language = 'en',
+  previewPath = '/sign-in',
   signInExperience,
   endpoint: endpointInput,
   disabled = false,
@@ -58,6 +61,24 @@ function SignInExperiencePreview({
   const previewRef = useRef<HTMLIFrameElement>(null);
   const { data: allConnectors } = useSWR<ConnectorResponse[], RequestError>('api/connectors');
   const [iframeLoaded, setIframeLoaded] = useState(false);
+
+  const resolvedAppearance = useMemo(
+    () =>
+      resolveSignInExperienceAppearance(
+        signInExperience?.appearance,
+        signInExperience?.branding,
+        signInExperience?.hideLogtoBranding
+      ),
+    [signInExperience?.appearance, signInExperience?.branding, signInExperience?.hideLogtoBranding]
+  );
+
+  const isSplitDesktop =
+    platform === PreviewPlatform.DesktopWeb &&
+    (resolvedAppearance.layout === 'split-left' || resolvedAppearance.layout === 'split-right');
+  const desktopCanvasColor =
+    mode === Theme.Dark
+      ? resolvedAppearance.background.darkColor
+      : resolvedAppearance.background.lightColor;
 
   const configForUiPage = useMemo(() => {
     if (!allConnectors || !signInExperience) {
@@ -82,8 +103,6 @@ function SignInExperiencePreview({
      * This logic aligns with the core library implementation in sign-in-experience/index.ts
      */
     const forgotPassword = (() => {
-      // If forgotPasswordMethods is null (production compatibility)
-      // fall back to connector-based availability only
       if (!signInExperience.forgotPasswordMethods) {
         return {
           email: hasEmailConnector,
@@ -91,8 +110,6 @@ function SignInExperiencePreview({
         };
       }
 
-      // When methods are explicitly configured and dev features are enabled,
-      // require both method inclusion and connector availability
       return {
         email:
           signInExperience.forgotPasswordMethods.includes(
@@ -134,6 +151,10 @@ function SignInExperiencePreview({
   }, []);
 
   useEffect(() => {
+    setIframeLoaded(false);
+  }, [previewPath]);
+
+  useEffect(() => {
     if (disabled) {
       setIframeLoaded(false);
       return;
@@ -145,7 +166,7 @@ function SignInExperiencePreview({
     return () => {
       iframe?.removeEventListener('load', iframeOnLoadEventHandler);
     };
-  }, [iframeLoaded, disabled, iframeOnLoadEventHandler]);
+  }, [iframeLoaded, disabled, iframeOnLoadEventHandler, previewPath]);
 
   useEffect(() => {
     if (!iframeLoaded) {
@@ -164,12 +185,12 @@ function SignInExperiencePreview({
       className={classNames(
         styles.preview,
         platform === PreviewPlatform.DesktopWeb ? styles.web : styles.mobile,
+        isSplitDesktop && styles.splitWeb,
         disabled && styles.disabled
       )}
       style={conditional(
         platform === PreviewPlatform.DesktopWeb && {
-          // Set background color to match iframe's background color on both dark and light mode.
-          backgroundColor: mode === Theme.Dark ? '#000' : '#e5e1ec',
+          backgroundColor: desktopCanvasColor,
         }
       )}
     >
@@ -193,7 +214,7 @@ function SignInExperiencePreview({
               ref={previewRef}
               // Allow all sandbox rules
               sandbox={undefined}
-              src={new URL('/sign-in?preview=true', endpoint).toString()}
+              src={new URL(`${previewPath}?preview=true`, endpoint).toString()}
               tabIndex={-1}
               title={t('sign_in_exp.preview.title')}
             />

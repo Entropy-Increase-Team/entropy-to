@@ -2,10 +2,13 @@ import { describe, expect, it } from 'vitest';
 
 import {
   MfaPolicy,
+  brandingGuard,
+  colorGuard,
   customUiCspGuard,
   defaultTrustedDevicePolicy,
   mfaGuard,
   passwordExpirationPolicyGuard,
+  signInExperienceAppearanceGuard,
   trustedDevicePolicyGuard,
 } from './sign-in-experience.js';
 
@@ -120,5 +123,99 @@ describe('mfaGuard', () => {
     expect(mfaGuard.safeParse({ factors: [], policy: MfaPolicy.UserControlled }).success).toBe(
       true
     );
+  });
+});
+
+describe('brandingGuard, colorGuard, and signInExperienceAppearanceGuard', () => {
+  it('accepts extended branding with custom footerBranding and blocks non-http footer URLs', () => {
+    expect(
+      brandingGuard.safeParse({
+        brandName: '熵增账号中心',
+        tagline: '统一身份认证',
+        adaptiveLogo: true,
+        footerBranding: {
+          mode: 'custom',
+          text: '© 2026 熵增开放平台',
+          linkUrl: 'https://open.entropy.example',
+          icpRecord: '京ICP备12345678号',
+        },
+      }).success
+    ).toBe(true);
+
+    expect(
+      brandingGuard.safeParse({
+        footerBranding: {
+          mode: 'custom',
+          linkUrl: ['javascript', 'alert(1)'].join(':'),
+        },
+      }).success
+    ).toBe(false);
+  });
+
+  it('accepts optional link and foreground colors in colorGuard', () => {
+    expect(
+      colorGuard.safeParse({
+        primaryColor: '#14171C',
+        darkPrimaryColor: '#F5F7FA',
+        isDarkModeEnabled: true,
+        linkColor: '#0D74CE',
+        darkLinkColor: '#6EA8FF',
+        primaryForegroundColor: '#FFFFFF',
+        darkPrimaryForegroundColor: '#0F1114',
+      }).success
+    ).toBe(true);
+  });
+
+  it('validates appearance presets, layouts, https font URLs, and blocks CSS injection in font names', () => {
+    expect(
+      signInExperienceAppearanceGuard.safeParse({
+        preset: 'entropy',
+        layout: 'split-left',
+        headerAlignment: 'left',
+        cardWidth: 'default',
+        topBar: {
+          enabled: true,
+          showThemeToggle: true,
+          homeUrl: 'https://open.entropy.example',
+          homeLabel: '返回首页',
+        },
+        background: {
+          type: 'tech-grid',
+          lightColor: '#f4f4f6',
+          darkColor: '#0f1114',
+          overlayOpacity: 0.45,
+        },
+        surface: {
+          cardRadius: 'xl',
+          controlRadius: 'md',
+          shadow: 'whisper',
+          density: 'default',
+          darkTopHighlight: true,
+        },
+        typography: {
+          fontPreset: 'custom',
+          customFontFamily: "'Noto Sans SC', sans-serif",
+          customFontStylesheetUrl: 'https://fonts.googleapis.com/css2?family=Noto+Sans+SC',
+        },
+      }).success
+    ).toBe(true);
+
+    expect(
+      signInExperienceAppearanceGuard.safeParse({
+        typography: {
+          fontPreset: 'custom',
+          customFontFamily: 'Arial; } body { background: red }',
+        },
+      }).success
+    ).toBe(false);
+
+    expect(
+      signInExperienceAppearanceGuard.safeParse({
+        typography: {
+          fontPreset: 'custom',
+          customFontStylesheetUrl: 'http://insecure.example.com/font.css',
+        },
+      }).success
+    ).toBe(false);
   });
 });

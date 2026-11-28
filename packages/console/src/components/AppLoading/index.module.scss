@@ -13,3 +13,17 @@
     margin-bottom: _.unit(8);
   }
 }
+
+.brandLogo {
+  height: 36px;
+  width: auto;
+  max-width: 180px;
+  object-fit: contain;
+  margin-bottom: _.unit(6);
+}
+
+.brandTitle {
+  font: var(--font-title-1);
+  color: var(--color-text);
+  margin-bottom: _.unit(6);
+}

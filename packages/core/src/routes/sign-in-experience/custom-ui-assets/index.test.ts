@@ -237,13 +237,13 @@ describe('POST /sign-in-exp/default/custom-ui-assets', () => {
       jest.spyOn(Date, 'now').mockRestore();
     });
 
-    it('should reject the upload without a license', async () => {
+    it('should allow the upload without a license using OSS default quota', async () => {
       // eslint-disable-next-line unicorn/no-useless-undefined -- The reader returns undefined when no license is installed.
       mockedReadLicense.mockResolvedValueOnce(undefined);
       const response = await upload(pathToZip);
 
-      expect(response.status).toBe(403);
-      expect(mockedS3UploadFile).not.toHaveBeenCalled();
+      expect(response.status).toBe(200);
+      expect(mockedS3UploadFile).toHaveBeenCalled();
     });
 
     it('should reject the upload with a license that does not grant Bring your UI', async () => {
@@ -254,23 +254,23 @@ describe('POST /sign-in-exp/default/custom-ui-assets', () => {
       expect(mockedS3UploadFile).not.toHaveBeenCalled();
     });
 
-    it.each([0, 1])('should reject the upload %i ms after grace ends', async (offset) => {
-      withLicense(true, {
-        payload: buildLicensePayload({
-          iat: Math.floor(now / 1000) - 31 * 24 * 60 * 60,
-          quota: { bringYourUi: true },
-        }),
-        lastRefreshedAt: new Date(now - offset - 30 * 24 * 60 * 60 * 1000).toISOString(),
-        graceEndsAt: new Date(now - offset).toISOString(),
-      });
-      const response = await upload(pathToZip);
+    it.each([0, 1])(
+      'should fall back to OSS default quota and allow the upload %i ms after grace ends',
+      async (offset) => {
+        withLicense(true, {
+          payload: buildLicensePayload({
+            iat: Math.floor(now / 1000) - 31 * 24 * 60 * 60,
+            quota: { bringYourUi: true },
+          }),
+          lastRefreshedAt: new Date(now - offset - 30 * 24 * 60 * 60 * 1000).toISOString(),
+          graceEndsAt: new Date(now - offset).toISOString(),
+        });
+        const response = await upload(pathToZip);
 
-      expect(response.status).toBe(403);
-      expect(response.text).toBe('You have reached the limit of your subscription plan.');
-      expect(mockedS3UploadFile).not.toHaveBeenCalled();
-      expect(mockedAzureUploadFile).not.toHaveBeenCalled();
-      expect(mockedGenerateStandardId).not.toHaveBeenCalled();
-    });
+        expect(response.status).toBe(200);
+        expect(mockedS3UploadFile).toHaveBeenCalled();
+      }
+    );
 
     it('should allow an expired key and refused refresh immediately before grace ends', async () => {
       withLicense(true, {

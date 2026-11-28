@@ -14,9 +14,10 @@ import {
   logtoCookieKey,
   logtoAcrValues,
   ExtraParamsKey,
+  resolveFooterBranding,
   type Json,
 } from '@logto/schemas';
-import { conditional, deduplicateByKey, trySafe } from '@silverhand/essentials';
+import { conditional, conditionalArray, deduplicateByKey, trySafe } from '@silverhand/essentials';
 import { NotFoundError } from '@silverhand/slonik';
 import { type i18n } from 'i18next';
 import { type KoaContextWithOIDC, Provider, type ResourceServer, errors } from 'oidc-provider';
@@ -47,6 +48,7 @@ import {
   readOptionalTheme,
   validateCustomClientMetadata,
 } from '#src/oidc/utils.js';
+import { escapeHtmlAttributeValue } from '#src/saml-application/SamlApplication/utils.js';
 import type Libraries from '#src/tenants/Libraries.js';
 import type Queries from '#src/tenants/Queries.js';
 import { i18next } from '#src/utils/i18n.js';
@@ -428,14 +430,59 @@ export default function initOidc(
           // eslint-disable-next-line no-template-curly-in-string
           ctx.body = logoutSource.replace('${form}', form);
         },
-        postLogoutSuccessSource(ctx) {
+        async postLogoutSuccessSource(ctx) {
           // eslint-disable-next-line no-restricted-syntax -- detect if i18n is available in the context @see {koaI18next middleware}
           const i18n = 'i18n' in ctx ? (ctx.i18n as i18n) : i18next;
+          const sie = await trySafe(queries.signInExperiences.findDefaultSignInExperience());
+          const footerBranding = resolveFooterBranding(sie?.branding, sie?.hideLogtoBranding);
+          const brandName = sie?.branding.brandName ?? EnvSet.values.brandName;
+          const favicon = sie?.branding.favicon ?? (EnvSet.values.brandFaviconUrl || undefined);
+          const faviconTag = favicon
+            ? `<link rel="icon" href="${escapeHtmlAttributeValue(favicon)}" />`
+            : '';
+          const message = i18n.t<string, I18nKey>('oidc.logout_success');
+          const title = brandName ? `${message} - ${brandName}` : message;
 
-          ctx.body = logoutSuccessSource.replace(
-            // eslint-disable-next-line no-template-curly-in-string
-            '${message}',
-            i18n.t<string, I18nKey>('oidc.logout_success')
+          const buildFooterHtml = (): string => {
+            if (footerBranding.mode === 'hidden') {
+              return '';
+            }
+
+            if (footerBranding.mode === 'custom') {
+              const parts = conditionalArray<string>(
+                footerBranding.logoUrl &&
+                  `<img src="${escapeHtmlAttributeValue(footerBranding.logoUrl)}" alt="" />`,
+                footerBranding.text &&
+                  (footerBranding.linkUrl
+                    ? `<a href="${escapeHtmlAttributeValue(footerBranding.linkUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttributeValue(footerBranding.text)}</a>`
+                    : `<span>${escapeHtmlAttributeValue(footerBranding.text)}</span>`),
+                footerBranding.icpRecord &&
+                  `<a href="${escapeHtmlAttributeValue(
+                    footerBranding.icpUrl ?? 'https://beian.miit.gov.cn/'
+                  )}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttributeValue(
+                    footerBranding.icpRecord
+                  )}</a>`
+              );
+              return parts.length > 0
+                ? `<div class="footer">${parts.join('<span>·</span>')}</div>`
+                : '';
+            }
+
+            return '<div class="footer"><a href="https://logto.io/" target="_blank" rel="noopener noreferrer">Powered by Logto</a></div>';
+          };
+
+          const values: Record<string, string> = {
+            lang: escapeHtmlAttributeValue(i18n.language),
+            dir: escapeHtmlAttributeValue(i18n.dir()),
+            title: escapeHtmlAttributeValue(title),
+            faviconTag,
+            message: escapeHtmlAttributeValue(message),
+            footerHtml: buildFooterHtml(),
+          };
+
+          ctx.body = logoutSuccessSource.replaceAll(
+            /\${(\w+)}/g,
+            (_, key: string) => values[key] ?? ''
           );
         },
       },

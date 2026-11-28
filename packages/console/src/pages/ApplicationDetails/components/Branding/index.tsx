@@ -46,6 +46,7 @@ function Branding({ application, isActive }: Props) {
       isBrandingEnabled: application.isThirdParty,
       branding: emptyBranding,
       color: {},
+      appearance: {},
     },
   });
 
@@ -99,10 +100,12 @@ function Branding({ application, isActive }: Props) {
     reset({
       ...data,
       branding: { ...emptyBranding, ...data.branding },
+      appearance: data.appearance,
       isBrandingEnabled: application.isThirdParty
         ? true
         : Object.keys(data.branding).length > 0 ||
           Object.keys(data.color).length > 0 ||
+          Object.keys(data.appearance).length > 0 ||
           Boolean(data.customCss),
     });
   }, [application.isThirdParty, data, reset]);

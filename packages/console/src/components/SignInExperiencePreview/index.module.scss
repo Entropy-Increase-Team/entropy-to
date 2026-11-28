@@ -59,10 +59,10 @@
 
         &.dark {
           // Sync with iframe's UI color
-          background: #1a1c1d;
+          background: #0f1114;
 
           .topBar {
-            color: #fff;
+            color: #f3f5f8;
           }
         }
 
@@ -81,6 +81,21 @@
           transform: scaleX(_screenSize.$mobile-scale-x) scaleY(_screenSize.$mobile-scale-y);
           margin-inline-start: _screenSize.$mobile-to-wrapper-offset-x;
           margin-top: _screenSize.$mobile-to-wrapper-offset-y;
+        }
+      }
+    }
+  }
+
+  &.web.splitWeb {
+    .deviceWrapper {
+      .device {
+        iframe {
+          width: 1080px;
+          height: 1356px;
+          transform: scale(0.461);
+          transform-origin: top left;
+          margin-inline-start: 0;
+          margin-top: 0;
         }
       }
     }

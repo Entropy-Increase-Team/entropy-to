@@ -1,4 +1,5 @@
 import { getBrandingLogoUrl } from '@experience/shared/utils/logo';
+import { Theme } from '@logto/schemas';
 import classNames from 'classnames';
 import { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -20,17 +21,27 @@ const PageHeader = () => {
       branding: experienceSettings.branding,
       isDarkModeEnabled: experienceSettings.color.isDarkModeEnabled,
     });
+  const shouldInvertLogo =
+    Boolean(experienceSettings?.branding.adaptiveLogo) &&
+    theme === Theme.Dark &&
+    Boolean(experienceSettings?.branding.logoUrl) &&
+    !experienceSettings?.branding.darkLogoUrl;
+  const brandName = experienceSettings?.branding.brandName?.trim();
 
   return (
     <header className={classNames(styles.header, layoutClassNames.pageHeader)}>
       <div className={styles.left}>
         {logoUrl && (
           <>
-            <img className={styles.logo} src={logoUrl} alt="logo" />
+            <img
+              className={classNames(styles.logo, shouldInvertLogo && 'theme-adaptive-logo')}
+              src={logoUrl}
+              alt={brandName ?? 'logo'}
+            />
             <div className={styles.divider} />
           </>
         )}
-        <span className={styles.appName}>{t('account_center.page.title')}</span>
+        <span className={styles.appName}>{brandName ?? t('account_center.page.title')}</span>
       </div>
       <UserMenu />
     </header>

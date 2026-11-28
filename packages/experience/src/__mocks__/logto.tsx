@@ -89,6 +89,7 @@ export const mockSignInExperience: SignInExperience = {
   branding: {
     logoUrl: 'http://logto.png',
   },
+  appearance: {},
   termsOfUseUrl: 'http://terms.of.use/',
   privacyPolicyUrl: 'http://privacy.policy/',
   languageInfo: {
@@ -143,6 +144,7 @@ export const mockSignInExperienceSettings: SignInExperienceResponse = {
   id: mockSignInExperience.id,
   color: mockSignInExperience.color,
   branding: mockSignInExperience.branding,
+  appearance: mockSignInExperience.appearance,
   termsOfUseUrl: mockSignInExperience.termsOfUseUrl,
   privacyPolicyUrl: mockSignInExperience.privacyPolicyUrl,
   languageInfo: mockSignInExperience.languageInfo,

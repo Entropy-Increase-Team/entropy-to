@@ -347,6 +347,19 @@ export default class GlobalValues {
     getEnv('PRIVATE_KEY_ROTATION_GRACE_PERIOD', '0')
   );
 
+  /**
+   * Instance-level white-label brand defaults.
+   * Tenants may override these via `sign_in_experiences.branding` (and app/org overrides).
+   * Logo and favicon URLs default to empty strings so no private or third-party logos are bundled.
+   */
+  public readonly brandName = getEnv('BRAND_NAME', '熵增账号中心');
+  public readonly brandLogoUrl = getEnv('BRAND_LOGO_URL');
+  public readonly brandDarkLogoUrl = getEnv('BRAND_DARK_LOGO_URL');
+  public readonly brandFaviconUrl = getEnv('BRAND_FAVICON_URL');
+  public readonly brandWebsiteUrl = getEnv('BRAND_WEBSITE_URL');
+  public readonly brandDocsUrl = getEnv('BRAND_DOCS_URL');
+  public readonly brandSupportEmail = getEnv('BRAND_SUPPORT_EMAIL');
+
   public get dbUrl(): string {
     return this.databaseUrl;
   }

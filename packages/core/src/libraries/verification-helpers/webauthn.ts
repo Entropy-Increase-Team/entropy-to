@@ -26,6 +26,7 @@ import RequestError from '#src/errors/RequestError/index.js';
 
 type GenerateWebAuthnRegistrationOptionsParameters = {
   rpId: string;
+  rpName?: string;
   user: Pick<
     User,
     'id' | 'name' | 'username' | 'primaryEmail' | 'primaryPhone' | 'mfaVerifications'
@@ -34,12 +35,13 @@ type GenerateWebAuthnRegistrationOptionsParameters = {
 
 export const generateWebAuthnRegistrationOptions = async ({
   rpId,
+  rpName,
   user,
 }: GenerateWebAuthnRegistrationOptionsParameters): Promise<WebAuthnRegistrationOptions> => {
   const { username, name, primaryEmail, primaryPhone, id, mfaVerifications } = user;
 
   const options: GenerateRegistrationOptionsOpts = {
-    rpName: rpId,
+    rpName: rpName ?? rpId,
     rpID: rpId,
     userID: Uint8Array.from(Buffer.from(id)),
     userName: getUserDisplayName({ username, primaryEmail, primaryPhone }) ?? 'Unnamed User',

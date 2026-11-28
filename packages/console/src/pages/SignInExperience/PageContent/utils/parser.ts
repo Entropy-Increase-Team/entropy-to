@@ -1,6 +1,7 @@
 import { customUiCspDirectives } from '@logto/core-kit';
 import {
   AlternativeSignUpIdentifier,
+  resolveFooterBranding,
   SignInIdentifier,
   SignInMode,
   type SignInExperience,
@@ -9,7 +10,6 @@ import {
 import { conditional } from '@silverhand/essentials';
 
 import { emptyBranding } from '@/types/sign-in-experience';
-import { removeFalsyValues } from '@/utils/object';
 
 import {
   type SignInExperiencePageManagedData,
@@ -17,6 +17,14 @@ import {
   type SignUpForm,
   type CustomUiCspForm,
 } from '../../types';
+
+import {
+  sanitizeAppearanceForSubmit,
+  sanitizeBrandingForSubmit,
+  sanitizeColorForSubmit,
+} from './branding-parser';
+
+export { sanitizeAppearanceForSubmit } from './branding-parser';
 
 /**
  * For backward compatibility,
@@ -28,11 +36,7 @@ const parsePrimaryIdentifier = (identifiers: SignInIdentifier[]): SignUpForm['id
   }
 
   if (identifiers.length === 1 && identifiers[0]) {
-    return [
-      {
-        identifier: identifiers[0],
-      },
-    ];
+    return [{ identifier: identifiers[0] }];
   }
 
   if (
@@ -40,64 +44,42 @@ const parsePrimaryIdentifier = (identifiers: SignInIdentifier[]): SignUpForm['id
     identifiers.includes(SignInIdentifier.Email) &&
     identifiers.includes(SignInIdentifier.Phone)
   ) {
-    return [
-      {
-        identifier: AlternativeSignUpIdentifier.EmailOrPhone,
-      },
-    ];
+    return [{ identifier: AlternativeSignUpIdentifier.EmailOrPhone }];
   }
 
   throw new Error('Invalid identifiers in the sign up settings.');
 };
 
 const signUpIdentifiersParser = {
-  /**
-   * Merge the @see {SignUp['identifiers']} with the @see {SignUp['secondaryIdentifiers']}
-   * into one @see {SignUpForm['identifiers']} form field.
-   */
   toSignUpForm: (
     identifiers: SignInIdentifier[],
     secondaryIdentifiers: SignUp['secondaryIdentifiers'] = []
-  ): SignUpForm['identifiers'] => {
-    const primarySignUpIdentifier = parsePrimaryIdentifier(identifiers);
-    return [
-      ...primarySignUpIdentifier,
-      ...secondaryIdentifiers.map(({ identifier }) => ({ identifier })),
-    ];
-  },
-  /**
-   * For backward compatibility,
-   * we need to split the @see {SignUpForm['identifiers']} into @see {SignUp['identifiers']}
-   * and @see {SignUp['secondaryIdentifiers']} two fields.
-   */
+  ): SignUpForm['identifiers'] => [
+    ...parsePrimaryIdentifier(identifiers),
+    ...secondaryIdentifiers.map(({ identifier }) => ({ identifier })),
+  ],
   toSieData: (
     signUpIdentifiers: SignUpForm['identifiers']
   ): Pick<SignUp, 'identifiers' | 'secondaryIdentifiers'> => {
     const primaryIdentifier = signUpIdentifiers[0];
-
     const identifiers = primaryIdentifier
       ? primaryIdentifier.identifier === AlternativeSignUpIdentifier.EmailOrPhone
         ? [SignInIdentifier.Email, SignInIdentifier.Phone]
         : [primaryIdentifier.identifier]
       : [];
-
     const secondaryIdentifiers = signUpIdentifiers.slice(1).map(({ identifier }) => ({
       identifier,
       // For email or phone, we always set the `verify` flag to true.
       ...conditional(identifier !== SignInIdentifier.Username && { verify: true }),
     }));
 
-    return {
-      identifiers,
-      secondaryIdentifiers,
-    };
+    return { identifiers, secondaryIdentifiers };
   },
 };
 
 export const signUpFormDataParser = {
   fromSignUp: (data: SignUp): SignUpForm => {
     const { identifiers, secondaryIdentifiers, ...signUpData } = data;
-
     return {
       identifiers: signUpIdentifiersParser.toSignUpForm(identifiers, secondaryIdentifiers),
       ...signUpData,
@@ -105,7 +87,6 @@ export const signUpFormDataParser = {
   },
   toSignUp: (formData: SignUpForm): SignUp => {
     const { identifiers, ...signUpFormData } = formData;
-
     return {
       ...signUpIdentifiersParser.toSieData(identifiers),
       ...signUpFormData,
@@ -143,15 +124,11 @@ const normalizeCustomUiCspForSubmit = (
   customUiCspDirectives.reduce<SignInExperiencePageManagedData['customUiCsp']>(
     (normalizedCustomUiCsp, directive) => {
       const sources = normalizeCustomUiCspSources(customUiCsp?.[directive]);
-
       if (sources.length === 0) {
         return normalizedCustomUiCsp;
       }
 
-      return {
-        ...normalizedCustomUiCsp,
-        [directive]: sources,
-      };
+      return { ...normalizedCustomUiCsp, [directive]: sources };
     },
     {}
   );
@@ -163,6 +140,7 @@ export const sieFormDataParser = {
       customCss,
       customUiCsp,
       branding,
+      appearance,
       // Start: Remove the omitted fields from the data
       passwordPolicy,
       mfa,
@@ -193,7 +171,9 @@ export const sieFormDataParser = {
       branding: {
         ...emptyBranding,
         ...branding,
+        footerBranding: resolveFooterBranding(branding, rest.hideLogtoBranding),
       },
+      appearance,
       passkeySignIn: {
         enabled: false,
         showPasskeyButton: true,
@@ -211,6 +191,8 @@ export const sieFormDataParser = {
   ): SignInExperiencePageManagedData => {
     const {
       branding,
+      color,
+      appearance,
       createAccountEnabled,
       signUp,
       customCss,
@@ -222,9 +204,16 @@ export const sieFormDataParser = {
       ...rest
     } = formData;
 
+    const sanitizedBranding = sanitizeBrandingForSubmit(branding);
+    const syncedHideLogtoBranding = sanitizedBranding.footerBranding
+      ? sanitizedBranding.footerBranding.mode !== 'logto'
+      : hideLogtoBranding;
+
     return {
       ...rest,
-      branding: removeFalsyValues(branding),
+      color: sanitizeColorForSubmit(color),
+      branding: sanitizedBranding,
+      appearance: sanitizeAppearanceForSubmit(appearance),
       signUp: signUpFormDataParser.toSignUp(signUp),
       signUpProfileFields:
         hasConfiguredSignUpProfileFields || rest.signUpProfileFields.length > 0
@@ -239,33 +228,13 @@ export const sieFormDataParser = {
           crossOriginOpenerPolicy,
         }
       ),
-      ...conditional(isHideLogtoBrandingAvailable && { hideLogtoBranding }),
+      ...conditional(
+        isHideLogtoBrandingAvailable && { hideLogtoBranding: syncedHideLogtoBranding }
+      ),
     };
   },
 };
 
-/**
- * The data parser takes the raw data from the API,
- * - fulfills the default values for the missing fields.
- * - removes the omitted fields from the data, convert the {@link SignInExperience} to the {@link SignInExperiencePageManagedData}
- *
- * This is to ensure the data consistency between the form and the remote model.
- * So it won't trigger the form diff modal when the user hasn't changed anything.
- *
- * Affected fields:
- * - `signUp.secondaryIdentifiers`: This field is optional in the data schema,
- *  but through the form, we always fill it with an empty array.
- * - `signUpProfileFields`: nullable in the data schema, but `null` and `[]` carry different
- *  runtime semantics and must stay distinct in compare payloads.
- * - `mfa`
- * - `adaptiveMfa`
- * - `passwordPolicy`
- * - `captchaPolicy`
- * - `sentinelPolicy`
- * - `emailBlocklistPolicy`
- * - `passwordExpiration`
- * - `usernamePolicy`
- */
 export const signInExperienceToUpdatedDataParser = (
   data: SignInExperience,
   {

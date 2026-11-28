@@ -6,6 +6,10 @@ body {
   @include fonts.fonts;
 
   --radius: 8px;
+  --radius-card: 20px;
+  --card-outer-width: 480px;
+  --card-inner-width: 384px;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: auto;
   margin: 0;
@@ -51,6 +55,66 @@ input[type='number'] {
   -moz-appearance: textfield;
 }
 
+/* Instant 0ms focus ring aligned with Entropy keyboard navigation accessibility spec */
 :focus-visible {
-  outline: solid 1px var(--color-brand-default);
+  outline: 2px solid var(--color-ring, var(--color-brand-default));
+  outline-offset: 2px;
+  transition: none;
+}
+
+/* Dark mode adaptive monochrome logo filter */
+/* stylelint-disable-next-line selector-class-pattern -- global utility class shared with SSR and components */
+html[data-theme='dark'] .theme-adaptive-logo {
+  filter: invert(1) brightness(1.04);
+}
+
+@keyframes entropy-error-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20% {
+    transform: translateX(-4px);
+  }
+
+  40% {
+    transform: translateX(4px);
+  }
+
+  60% {
+    transform: translateX(-3px);
+  }
+
+  80% {
+    transform: translateX(2px);
+  }
+}
+
+/* stylelint-disable-next-line selector-class-pattern -- global utility class for validation shake */
+html[data-error-shake='true'] .animate-error-shake {
+  animation: entropy-error-shake 280ms var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    /* stylelint-disable declaration-no-important, time-min-milliseconds -- enforce OS reduced-motion accessibility preference */
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+    /* stylelint-enable declaration-no-important, time-min-milliseconds */
+  }
+}
+
+html[data-motion='reduced'] *,
+html[data-motion='reduced'] *::before,
+html[data-motion='reduced'] *::after {
+  /* stylelint-disable declaration-no-important, time-min-milliseconds -- enforce tenant reduced-motion appearance setting */
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  /* stylelint-enable declaration-no-important, time-min-milliseconds */
 }

@@ -34,13 +34,19 @@
         theme = (darkOk && prefersDark) ? 'dark' : 'light';
         document.documentElement.setAttribute('data-theme', theme);
         if (typeof ssr === 'object' && ssr !== null && ssr.signInExperience
-          && ssr.signInExperience.data && ssr.signInExperience.data.color) {
-          var color = ssr.signInExperience.data.color;
-          var primaryColor = theme === 'dark' && color.darkPrimaryColor
-            ? color.darkPrimaryColor
-            : color.primaryColor;
-          if (primaryColor) {
-            document.body.style.setProperty('--color-brand-default', primaryColor);
+          && ssr.signInExperience.data) {
+          var sieData = ssr.signInExperience.data;
+          if (sieData.appearance && sieData.appearance.preset) {
+            document.documentElement.setAttribute('data-preset', sieData.appearance.preset);
+          }
+          if (sieData.color) {
+            var color = sieData.color;
+            var primaryColor = theme === 'dark' && color.darkPrimaryColor
+              ? color.darkPrimaryColor
+              : color.primaryColor;
+            if (primaryColor) {
+              document.body.style.setProperty('--color-brand-default', primaryColor);
+            }
           }
         }
       } catch (e) { /* noop */ }

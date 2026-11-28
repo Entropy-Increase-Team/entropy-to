@@ -91,8 +91,8 @@ describe('getEffectiveLicenseQuota', () => {
 
   it.each([0, 1])('falls back to OSS defaults %i ms after grace ends', (offset) => {
     expect(getEffectiveLicenseQuota(fullLicense, graceEndsAt + offset)).toEqual({
-      hideLogtoBranding: false,
-      bringYourUi: false,
+      hideLogtoBranding: true,
+      bringYourUi: true,
       idpInitiatedSso: false,
       consoleCollaboration: false,
       mandatoryMfa: false,

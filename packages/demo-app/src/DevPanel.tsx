@@ -67,7 +67,7 @@ const DevPanel = () => {
       {error && <div role="alert">Last SDK error: {error.message}</div>}
       <StepUpForm />
       <form onSubmit={submitConfig}>
-        <div className={styles.title}>Logto config</div>
+        <div className={styles.title}>OIDC config</div>
         <div className={styles.item}>
           <div className={styles.text}>App ID</div>
           <input

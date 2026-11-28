@@ -2,6 +2,7 @@ import { generateDarkColor } from '@logto/core-kit';
 import { defaultPrimaryColor, type Organization } from '@logto/schemas';
 
 import { type Option } from '@/ds-components/Select/MultiSelect';
+import { sanitizeAppearanceForSubmit } from '@/pages/SignInExperience/PageContent/utils/parser';
 import { emptyBranding } from '@/types/sign-in-experience';
 import { removeFalsyValues } from '@/utils/object';
 
@@ -22,6 +23,7 @@ export const normalizeData = (
     ...emptyBranding,
     ...data.branding,
   },
+  appearance: data.appearance,
   color: {
     primaryColor: data.color.primaryColor ?? defaultPrimaryColor,
     darkPrimaryColor: data.color.darkPrimaryColor ?? generateDarkColor(defaultPrimaryColor),
@@ -33,6 +35,7 @@ export const normalizeData = (
   isBrandingEnabled:
     Object.keys(data.branding).length > 0 ||
     Object.keys(data.color).length > 0 ||
+    Object.keys(data.appearance).length > 0 ||
     Boolean(data.customCss),
 });
 
@@ -43,6 +46,7 @@ export const assembleData = ({
   customData,
   branding,
   color,
+  appearance,
   customCss,
   isBrandingEnabled,
   isTrustedDeviceAllowed,
@@ -51,8 +55,13 @@ export const assembleData = ({
   ...data,
   isTrustedDeviceAllowed,
   ...(isBrandingEnabled
-    ? { color, branding: branding && removeFalsyValues(branding), customCss }
-    : { color: {}, branding: {}, customCss: '' }),
+    ? {
+        color,
+        branding: branding && removeFalsyValues(branding),
+        appearance: sanitizeAppearanceForSubmit(appearance),
+        customCss,
+      }
+    : { color: {}, branding: {}, appearance: {}, customCss: '' }),
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   customData: JSON.parse(customData ?? '{}'),
 });

@@ -1,7 +1,7 @@
-import { Theme } from '@logto/schemas';
-import { useEffect, useRef } from 'react';
+import { type FooterBranding, Theme } from '@logto/schemas';
+import classNames from 'classnames';
 
-import LogtoLogtoDark from '@/shared/assets/icons/logto-logo-dark.svg?react';
+import LogtoLogoDark from '@/shared/assets/icons/logto-logo-dark.svg?react';
 import LogtoLogoLight from '@/shared/assets/icons/logto-logo-light.svg?react';
 import LogtoLogoShadow from '@/shared/assets/icons/logto-logo-shadow.svg?react';
 
@@ -12,179 +12,121 @@ const logtoUrl = `https://logto.io/?${new URLSearchParams({
   utm_medium: 'powered_by',
 }).toString()}`;
 
-const guardStyleSelector = 'style[data-logto-signature-guard="true"]';
+const getSafeHttpUrl = (value?: string): string | undefined => {
+  if (!value) {
+    return undefined;
+  }
 
-const signatureGuardStyle = `
-[data-logto-signature-container="secured"][data-logto-signature-container="secured"] {
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-}
+  try {
+    const url = new URL(value);
+    if (url.protocol === 'https:' || url.protocol === 'http:') {
+      return url.href;
+    }
+  } catch {
+    return undefined;
+  }
 
-[data-logto-signature="secured"][data-logto-signature="secured"] {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: flex-start !important;
-  font: var(--font-label-2) !important;
-  font-weight: normal !important;
-  color: var(--color-neutral-variant-60) !important;
-  padding: 4px 8px !important;
-  text-decoration: none !important;
-  opacity: 75% !important;
-  direction: ltr !important;
-  position: relative !important;
-  inset: auto !important;
-  left: auto !important;
-  right: auto !important;
-  top: auto !important;
-  bottom: auto !important;
-  transform: none !important;
-  pointer-events: auto !important;
-}
-
-[data-logto-signature="secured"][data-logto-signature="secured"]:is(:hover, :active, :focus-visible) {
-  opacity: 100% !important;
-}
-
-[data-logto-signature="secured"][data-logto-signature="secured"] [data-logto-signature-icon="static"] {
-  display: block !important;
-}
-
-[data-logto-signature="secured"][data-logto-signature="secured"] [data-logto-signature-icon="highlight"] {
-  display: none !important;
-}
-
-[data-logto-signature="secured"][data-logto-signature="secured"]:is(:hover, :active, :focus-visible)
-  [data-logto-signature-icon="static"] {
-  display: none !important;
-}
-
-[data-logto-signature="secured"][data-logto-signature="secured"]:is(:hover, :active, :focus-visible)
-  [data-logto-signature-icon="highlight"] {
-  display: block !important;
-}
-
-[data-logto-signature-text] {
-  margin-inline-end: 4px !important;
-}
-
-body.mobile [data-logto-signature="secured"][data-logto-signature="secured"] {
-  color: var(--color-neutral-variant-80) !important;
-  font: var(--font-label-3) !important;
-}
-`;
+  return undefined;
+};
 
 type Props = {
   readonly className?: string;
   readonly theme: Theme;
+  readonly footerBranding?: FooterBranding;
 };
 
-const LogtoSignature = ({ className, theme }: Props) => {
-  const LogtoLogo = theme === Theme.Light ? LogtoLogoLight : LogtoLogtoDark;
+/**
+ * Configurable 3-state footer signature (`hidden` | `custom` | `logto`).
+ * Defaults to `logto` when `footerBranding` is omitted so legacy callers gated by
+ * `!hideLogtoBranding` continue to work without breaking changes.
+ */
+const LogtoSignature = ({ className, theme, footerBranding }: Props) => {
+  const resolved: FooterBranding = footerBranding ?? { mode: 'logto' };
 
-  const containerRef = useRef<HTMLDivElement>(null);
-  const anchorRef = useRef<HTMLAnchorElement>(null);
+  if (resolved.mode === 'hidden') {
+    return null;
+  }
 
-  useEffect(() => {
-    if (typeof document === 'undefined') {
-      return;
+  if (resolved.mode === 'custom') {
+    const logoUrl =
+      theme === Theme.Dark
+        ? (resolved.darkLogoUrl ?? resolved.logoUrl)
+        : (resolved.logoUrl ?? resolved.darkLogoUrl);
+    const safeLinkUrl = getSafeHttpUrl(resolved.linkUrl);
+    const safeIcpUrl = getSafeHttpUrl(resolved.icpUrl);
+    const text = resolved.text?.trim();
+    const icpRecord = resolved.icpRecord?.trim();
+
+    if (!logoUrl && !text && !icpRecord) {
+      return null;
     }
 
-    const { current: container } = containerRef;
-    const { current: anchor } = anchorRef;
+    const brandContent = (
+      <>
+        {logoUrl && <img className={styles.customLogo} src={logoUrl} alt="" />}
+        {text && <span className={styles.customText}>{text}</span>}
+      </>
+    );
 
-    if (!anchor) {
-      return;
-    }
+    return (
+      <div className={classNames(styles.wrapper, className)} data-brand-signature="custom">
+        {(logoUrl ?? text) &&
+          (safeLinkUrl ? (
+            <a
+              className={styles.customLink}
+              href={safeLinkUrl}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              {brandContent}
+            </a>
+          ) : (
+            <span className={styles.customStatic}>{brandContent}</span>
+          ))}
+        {icpRecord && (
+          <>
+            {(logoUrl ?? text) && (
+              <span className={styles.separator} aria-hidden="true">
+                ·
+              </span>
+            )}
+            {safeIcpUrl ? (
+              <a
+                className={styles.icpLink}
+                href={safeIcpUrl}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                {icpRecord}
+              </a>
+            ) : (
+              <span className={styles.icpText}>{icpRecord}</span>
+            )}
+          </>
+        )}
+      </div>
+    );
+  }
 
-    const ensureGuardStyle = (): { created: boolean; element: HTMLStyleElement } => {
-      const existing = document.head.querySelector<HTMLStyleElement>(guardStyleSelector);
-
-      if (existing) {
-        return { created: false, element: existing };
-      }
-
-      const createdElement = document.createElement('style');
-      Reflect.set(createdElement.dataset, 'logtoSignatureGuard', 'true');
-      createdElement.append(signatureGuardStyle);
-      document.head.append(createdElement);
-
-      return { created: true, element: createdElement };
-    };
-
-    const { created, element: guardStyleElement } = ensureGuardStyle();
-
-    const enforceIntegrity = () => {
-      if (container) {
-        container.removeAttribute('hidden');
-        container.style.setProperty('display', 'block', 'important');
-        container.style.setProperty('visibility', 'visible', 'important');
-        container.style.setProperty('opacity', '1', 'important');
-      }
-
-      anchor.removeAttribute('hidden');
-
-      if (styles.signature && !anchor.classList.contains(styles.signature)) {
-        anchor.classList.add(styles.signature);
-      }
-
-      anchor.style.removeProperty('display');
-      anchor.style.removeProperty('visibility');
-      anchor.style.removeProperty('opacity');
-      anchor.style.removeProperty('position');
-      anchor.style.removeProperty('left');
-      anchor.style.removeProperty('right');
-      anchor.style.removeProperty('top');
-      anchor.style.removeProperty('bottom');
-      anchor.style.removeProperty('transform');
-    };
-
-    enforceIntegrity();
-
-    const observer = new MutationObserver(() => {
-      enforceIntegrity();
-    });
-
-    observer.observe(anchor, { attributes: true, attributeFilter: ['class', 'style', 'hidden'] });
-
-    if (container) {
-      observer.observe(container, {
-        attributes: true,
-        attributeFilter: ['class', 'style', 'hidden'],
-      });
-    }
-
-    const intervalId = window.setInterval(enforceIntegrity, 2000);
-
-    return () => {
-      observer.disconnect();
-      window.clearInterval(intervalId);
-
-      if (created) {
-        guardStyleElement.remove();
-      }
-    };
-  }, []);
+  const LogtoLogo = theme === Theme.Light ? LogtoLogoLight : LogtoLogoDark;
 
   return (
-    <div ref={containerRef} className={className} data-logto-signature-container="secured">
+    <div className={classNames(styles.wrapper, className)} data-brand-signature="logto">
       <a
-        ref={anchorRef}
         aria-label="Powered By Logto"
         className={styles.signature}
-        data-logto-signature="secured"
-        href={logtoUrl.toString()}
-        rel="noopener"
+        data-logto-signature="logto"
+        href={logtoUrl}
+        rel="noopener noreferrer"
         target="_blank"
       >
-        <span data-logto-signature-text className={styles.text}>
-          Powered by
-        </span>
-        <LogtoLogoShadow data-logto-signature-icon="static" className={styles.staticIcon} />
-        <LogtoLogo data-logto-signature-icon="highlight" className={styles.highlightIcon} />
+        <span className={styles.text}>Powered by</span>
+        <LogtoLogoShadow className={styles.staticIcon} />
+        <LogtoLogo className={styles.highlightIcon} />
       </a>
     </div>
   );
 };
 
+export { LogtoSignature as BrandSignature };
 export default LogtoSignature;

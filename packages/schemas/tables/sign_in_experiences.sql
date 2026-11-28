@@ -7,6 +7,7 @@ create table sign_in_experiences (
   id varchar(21) not null,
   color jsonb /* @use Color */ not null,
   branding jsonb /* @use Branding */ not null,
+  appearance jsonb /* @use SignInExperienceAppearance */ not null default '{}'::jsonb,
   hide_logto_branding boolean not null default false,
   language_info jsonb /* @use LanguageInfo */ not null,
   terms_of_use_url varchar(2048),

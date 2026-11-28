@@ -5,6 +5,7 @@
   -webkit-tap-highlight-color: transparent;
   display: inline-flex;
   justify-content: center;
+  transition: opacity 150ms ease, color 150ms ease;
 
   > svg {
     margin-inline-end: _.unit(2);
@@ -12,14 +13,13 @@
 
   &.primary {
     font: var(--font-label-2);
-    color: var(--color-brand-default);
+    color: var(--color-type-link, var(--color-brand-default));
     text-decoration: none;
 
     &:active {
-      color: var(--color-brand-hover);
+      opacity: 75%;
     }
   }
-
 
   &.secondary {
     color: var(--color-type-primary);
@@ -28,20 +28,22 @@
   }
 }
 
-
 :global(body.desktop) {
   .link {
     &.primary:hover {
-      color: var(--color-brand-hover);
+      opacity: 82%;
+      text-decoration: underline;
     }
 
     &.primary:focus-visible {
-      outline: _.border(var(--color-overlay-brand-focused));
+      transition: none;
+      outline: 2px solid var(--color-ring, var(--color-brand-default));
+      outline-offset: 2px;
     }
 
     &.secondary:hover,
     &.secondary:active {
-      color: var(--color-brand-default);
+      color: var(--color-type-link, var(--color-brand-default));
     }
   }
 }

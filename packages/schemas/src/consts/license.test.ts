@@ -104,10 +104,10 @@ describe('licensePayloadGuard', () => {
 });
 
 describe('ossDefaultQuota', () => {
-  it('locks every feature and caps SAML applications at 3', () => {
+  it('unlocks white-label branding and Bring Your Own UI while keeping remaining OSS caps', () => {
     expect(ossDefaultQuota).toStrictEqual({
-      hideLogtoBranding: false,
-      bringYourUi: false,
+      hideLogtoBranding: true,
+      bringYourUi: true,
       idpInitiatedSso: false,
       consoleCollaboration: false,
       mandatoryMfa: false,

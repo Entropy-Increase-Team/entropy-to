@@ -1,7 +1,7 @@
 import LogtoSignature from '@experience/shared/components/LogtoSignature';
 import { ReservedScope, UserScope } from '@logto/core-kit';
 import { LogtoProvider, useLogto } from '@logto/react';
-import { accountCenterApplicationId, SignInIdentifier } from '@logto/schemas';
+import { accountCenterApplicationId, resolveFooterBranding } from '@logto/schemas';
 import classNames from 'classnames';
 import { useContext, useMemo } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
@@ -13,6 +13,7 @@ import PageHeader from '@ac/components/PageHeader';
 import Sidebar from '@ac/components/Sidebar';
 import { layoutClassNames } from '@ac/constants/layout';
 
+import AccountRoutes from './AccountRoutes';
 import styles from './App.module.scss';
 import Callback from './Callback';
 import { AccountLayoutProvider } from './Providers/AccountLayoutContext';
@@ -21,51 +22,11 @@ import LogtoErrorBoundary from './Providers/AppBoundary/LogtoErrorBoundary';
 import PageContextProvider from './Providers/PageContextProvider';
 import PageContext from './Providers/PageContextProvider/PageContext';
 import GlobalLoading from './components/GlobalLoading';
-import {
-  securityRoute,
-  sessionsRoute,
-  profileRoute,
-  emailRoute,
-  emailSuccessRoute,
-  phoneRoute,
-  phoneSuccessRoute,
-  passwordRoute,
-  passwordSuccessRoute,
-  usernameRoute,
-  usernameSuccessRoute,
-  authenticatorAppRoute,
-  authenticatorAppReplaceRoute,
-  authenticatorAppSuccessRoute,
-  authenticatorAppReplaceSuccessRoute,
-  backupCodesGenerateRoute,
-  backupCodesRegenerateRoute,
-  backupCodesSuccessRoute,
-  backupCodesManageRoute,
-  passkeyAddRoute,
-  passkeyManageRoute,
-  passkeySuccessRoute,
-  socialSuccessRoute,
-  socialCallbackRoutePrefix,
-  socialRoutePrefix,
-} from './constants/routes';
+import { socialCallbackRoutePrefix } from './constants/routes';
 import initI18n from './i18n/init';
-import BackupCodeBinding from './pages/BackupCodeBinding';
-import BackupCodeView from './pages/BackupCodeView';
-import Email from './pages/Email';
 import Home from './pages/Home';
-import PasskeyBinding from './pages/PasskeyBinding';
-import PasskeyView from './pages/PasskeyView';
-import Password from './pages/Password';
-import Phone from './pages/Phone';
-import Profile from './pages/Profile';
-import Security from './pages/Security';
-import Sessions from './pages/Sessions';
 import SocialCallback from './pages/SocialCallback';
-import SocialFlow from './pages/SocialFlow';
 import StepUpFailure from './pages/StepUpFailure';
-import TotpBinding from './pages/TotpBinding';
-import UpdateSuccess from './pages/UpdateSuccess';
-import Username from './pages/Username';
 import { useAuthRedirect } from './use-auth-redirect';
 import { accountCenterBasePath, handleAccountCenterRoute } from './utils/account-center-route';
 import { getAccountTabSettings } from './utils/account-tabs';
@@ -159,68 +120,17 @@ export const Main = () => {
   }
 
   return (
-    <Routes>
-      <Route
-        path={emailSuccessRoute}
-        element={<UpdateSuccess identifierType={SignInIdentifier.Email} />}
-      />
-      <Route
-        path={phoneSuccessRoute}
-        element={<UpdateSuccess identifierType={SignInIdentifier.Phone} />}
-      />
-      <Route
-        path={usernameSuccessRoute}
-        element={<UpdateSuccess identifierType={SignInIdentifier.Username} />}
-      />
-      <Route path={passwordSuccessRoute} element={<UpdateSuccess identifierType="password" />} />
-      <Route
-        path={authenticatorAppSuccessRoute}
-        element={<UpdateSuccess identifierType="totp" />}
-      />
-      <Route
-        path={authenticatorAppReplaceSuccessRoute}
-        element={<UpdateSuccess identifierType="totp_replaced" />}
-      />
-      <Route
-        path={backupCodesSuccessRoute}
-        element={<UpdateSuccess identifierType="backup_code" />}
-      />
-      <Route path={passkeySuccessRoute} element={<UpdateSuccess identifierType="passkey" />} />
-      <Route path={socialSuccessRoute} element={<UpdateSuccess identifierType="social" />} />
-      <Route path={emailRoute} element={<Email />} />
-      <Route path={phoneRoute} element={<Phone />} />
-      <Route path={passwordRoute} element={<Password />} />
-      <Route path={usernameRoute} element={<Username />} />
-      <Route path={authenticatorAppReplaceRoute} element={<TotpBinding isReplace />} />
-      <Route path={authenticatorAppRoute} element={<TotpBinding />} />
-      <Route path={backupCodesGenerateRoute} element={<BackupCodeBinding />} />
-      <Route path={backupCodesRegenerateRoute} element={<BackupCodeBinding isRegenerate />} />
-      <Route path={backupCodesManageRoute} element={<BackupCodeView />} />
-      <Route path={passkeyAddRoute} element={<PasskeyBinding />} />
-      <Route path={passkeyManageRoute} element={<PasskeyView />} />
-      <Route path={`${socialRoutePrefix}/:connectorId`} element={<SocialFlow mode="add" />} />
-      <Route
-        path={`${socialRoutePrefix}/:connectorId/change`}
-        element={<SocialFlow mode="change" />}
-      />
-      <Route
-        path={`${socialRoutePrefix}/:connectorId/remove`}
-        element={<SocialFlow mode="remove" />}
-      />
-      {hasSecurity && <Route path={securityRoute} element={<Security />} />}
-      {hasSessions && <Route path={sessionsRoute} element={<Sessions />} />}
-      {hasProfile && <Route path={profileRoute} element={<Profile />} />}
-      <Route index element={<Home />} />
-      <Route path="*" element={<Home />} />
-    </Routes>
+    <AccountRoutes hasProfile={hasProfile} hasSecurity={hasSecurity} hasSessions={hasSessions} />
   );
 };
 
 const Layout = () => {
   const { accountCenterSettings, experienceSettings, isLoadingExperience, theme, platform } =
     useContext(PageContext);
-  // Hide while settings load, since `hideLogtoBranding` is unknown until then
-  const hideLogtoBranding = isLoadingExperience || experienceSettings?.hideLogtoBranding === true;
+  // Hide while settings load, since footer branding settings are unknown until then
+  const footerBranding = isLoadingExperience
+    ? { mode: 'hidden' as const }
+    : resolveFooterBranding(experienceSettings?.branding, experienceSettings?.hideLogtoBranding);
   const { pathname } = useLocation();
   const accountNavItems = useMemo(
     () => getAccountTabSettings({ accountCenterSettings, experienceSettings }).navItems,
@@ -271,10 +181,11 @@ const Layout = () => {
                   {stepUpFailure ? <StepUpFailure failure={stepUpFailure} /> : <Main />}
                 </LogtoErrorBoundary>
               </ErrorBoundary>
-              {!isFullPage && !hideLogtoBranding && (
+              {!isFullPage && footerBranding.mode !== 'hidden' && (
                 <LogtoSignature
                   className={classNames(styles.signature, layoutClassNames.signature)}
                   theme={theme}
+                  footerBranding={footerBranding}
                 />
               )}
             </main>

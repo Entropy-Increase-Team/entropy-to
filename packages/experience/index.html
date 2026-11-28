@@ -35,25 +35,39 @@
           && ssr.signInExperience.data.color.isDarkModeEnabled;
         var prefersDark = typeof window.matchMedia === 'function'
           && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var sessionTheme;
+        try {
+          sessionTheme = window.sessionStorage.getItem('entropy_experience_theme_preference');
+        } catch (storageError) { /* noop */ }
         // The theme override of the current authentication request, which the server resolves
-        // from the `_logto` flow cookie. Reading it from the same payload React reads keeps the
-        // first paint and the rendered app in agreement on every document load of the flow.
+        // from the `_logto` flow cookie. An explicit user toggle in sessionStorage takes precedence.
         var override = (typeof ssr === 'object' && ssr !== null && ssr.signInExperience)
           ? ssr.signInExperience.theme
           : undefined;
-        var preferred = (override === 'dark' || override === 'light')
-          ? override
-          : (prefersDark ? 'dark' : 'light');
+        var preferred = (sessionTheme === 'dark' || sessionTheme === 'light')
+          ? sessionTheme
+          : ((override === 'dark' || override === 'light')
+            ? override
+            : (prefersDark ? 'dark' : 'light'));
         theme = darkOk ? preferred : 'light';
         document.documentElement.setAttribute('data-theme', theme);
         if (typeof ssr === 'object' && ssr !== null && ssr.signInExperience
-          && ssr.signInExperience.data && ssr.signInExperience.data.color) {
-          var color = ssr.signInExperience.data.color;
-          var primaryColor = theme === 'dark' && color.darkPrimaryColor
-            ? color.darkPrimaryColor
-            : color.primaryColor;
-          if (primaryColor) {
-            document.body.style.setProperty('--color-brand-default', primaryColor);
+          && ssr.signInExperience.data) {
+          var sieData = ssr.signInExperience.data;
+          if (sieData.appearance && sieData.appearance.preset) {
+            document.documentElement.setAttribute('data-preset', sieData.appearance.preset);
+          }
+          if (sieData.appearance && sieData.appearance.layout) {
+            document.documentElement.setAttribute('data-layout', sieData.appearance.layout);
+          }
+          if (sieData.color) {
+            var color = sieData.color;
+            var primaryColor = theme === 'dark' && color.darkPrimaryColor
+              ? color.darkPrimaryColor
+              : color.primaryColor;
+            if (primaryColor) {
+              document.body.style.setProperty('--color-brand-default', primaryColor);
+            }
           }
         }
       } catch (e) { /* noop */ }
