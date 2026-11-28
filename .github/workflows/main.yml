@@ -93,6 +93,8 @@ jobs:
     # resolves to, so `playwright install --with-deps` fails before any test runs. Pin the image
     # until Playwright ships support, as `integration-test.yml` already does for Puppeteer.
     runs-on: ubuntu-24.04
+    env:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
     steps:
       - uses: actions/checkout@v4
@@ -130,6 +132,7 @@ jobs:
           JOB_QUEUE_TEST_DB_URL: postgres://postgres:postgres@localhost:5432/job_queue_test
 
       - name: Codecov core
+        if: env.CODECOV_TOKEN != ''
         uses: codecov/codecov-action@v4
         with:
           flags: core
@@ -137,6 +140,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Codecov ui
+        if: env.CODECOV_TOKEN != ''
         uses: codecov/codecov-action@v4
         with:
           flags: ui
@@ -171,12 +175,18 @@ jobs:
           fetch-depth: 0
           path: ./fresh
 
-      # Fetch the current version by finding the latest tag starts with "v", e.g. "v1.0.0-beta.19"
+      # Fetch the current version by finding the latest `@logto/core@*` tag
       - id: version
         working-directory: ./fresh
-        run: echo "current=$(git describe --match "@logto/core@*" --abbrev=0)" >> $GITHUB_OUTPUT
+        run: |
+          current="$(git describe --match "@logto/core@*" --abbrev=0 2>/dev/null || true)"
+          if [ -z "$current" ]; then
+            echo "::warning::No @logto/core@* tag found; skipping tag-based alteration up/down comparison."
+          fi
+          echo "current=$current" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v4
+        if: steps.version.outputs.current != ''
         with:
           ref: ${{ steps.version.outputs.current }}
           path: ./alteration
@@ -195,6 +205,7 @@ jobs:
       # Releases before the pnpm 12 upgrade keep their pnpm settings in the `pnpm` field of
       # package.json, which pnpm 12 ignores, so run their steps with pnpm 10.
       - name: Setup pnpm for alteration
+        if: steps.version.outputs.current != ''
         working-directory: ./alteration
         run: |
           if jq -e '.pnpm' package.json > /dev/null; then
@@ -204,10 +215,12 @@ jobs:
 
       # ** Prepack packages **
       - name: Prepack fresh
+        if: steps.version.outputs.current != ''
         working-directory: ./fresh
         run: pnpm i && pnpm prepack
 
       - name: Prepack alteration
+        if: steps.version.outputs.current != ''
         working-directory: ./alteration
         run: |
           export PATH="$ALTERATION_PNPM_BIN$PATH"
@@ -215,16 +228,19 @@ jobs:
       # ** End **
 
       - name: Setup Postgres
+        if: steps.version.outputs.current != ''
         uses: ikalnytskyi/action-setup-postgres@v6
 
       # ** Setup up-to-date databases and compare (test `up`) **
       - name: Setup fresh database
+        if: steps.version.outputs.current != ''
         working-directory: ./fresh
         run: pnpm cli db seed --test
         env:
           DB_URL: postgres://postgres:postgres@localhost:5432/fresh
 
       - name: Setup alteration database
+        if: steps.version.outputs.current != ''
         working-directory: ./alteration
         run: |
           export PATH="$ALTERATION_PNPM_BIN$PATH"
@@ -234,6 +250,7 @@ jobs:
           DB_URL: postgres://postgres:postgres@localhost:5432/alteration
 
       - name: Run alteration scripts
+        if: steps.version.outputs.current != ''
         working-directory: ./fresh
         run: pnpm cli db alt deploy next
         env:
@@ -241,12 +258,14 @@ jobs:
           DB_URL: postgres://postgres:postgres@localhost:5432/alteration
 
       - name: Compare databases
+        if: steps.version.outputs.current != ''
         working-directory: ./fresh
         run: node .scripts/compare-database.js fresh alteration
       # ** End **
 
       # ** Setup old databases and compare (test `down`) **
       - name: Setup old database
+        if: steps.version.outputs.current != ''
         working-directory: ./alteration
         run: |
           export PATH="$ALTERATION_PNPM_BIN$PATH"
@@ -256,6 +275,7 @@ jobs:
           DB_URL: postgres://postgres:postgres@localhost:5432/old
 
       - name: Revert fresh database to old
+        if: steps.version.outputs.current != ''
         working-directory: ./fresh
         run: pnpm cli db alt r v$(echo ${{ steps.version.outputs.current }} | cut -d@ -f3)
         env:
@@ -263,10 +283,12 @@ jobs:
           DB_URL: postgres://postgres:postgres@localhost:5432/fresh
 
       - name: Compare manifests
+        if: steps.version.outputs.current != ''
         working-directory: ./fresh
         run: node .scripts/compare-database.js fresh old
       # ** End **
 
       - name: Check alteration sequence
+        if: steps.version.outputs.current != ''
         working-directory: ./fresh
         run: node .scripts/check-alterations-sequence.js

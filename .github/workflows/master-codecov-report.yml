@@ -13,6 +13,8 @@ jobs:
     # `playwright install --with-deps` fails before any test runs. Pin the image until
     # Playwright ships support.
     runs-on: ubuntu-24.04
+    env:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
     steps:
       - uses: actions/checkout@v4
@@ -37,6 +39,7 @@ jobs:
         run: pnpm ci:test
 
       - name: Codecov Core
+        if: env.CODECOV_TOKEN != ''
         uses: codecov/codecov-action@v4
         with:
           flags: core
@@ -44,6 +47,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Codecov UI
+        if: env.CODECOV_TOKEN != ''
         uses: codecov/codecov-action@v4
         with:
           flags: experience

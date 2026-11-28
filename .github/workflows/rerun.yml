@@ -8,6 +8,8 @@ on:
         required: true
 jobs:
   rerun:
+    permissions:
+      actions: write
     runs-on: ubuntu-latest
     steps:
       - name: rerun ${{ inputs.run_id }}

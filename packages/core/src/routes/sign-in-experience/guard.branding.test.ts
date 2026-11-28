@@ -7,17 +7,23 @@ import { createRequester } from '#src/utils/test-utils.js';
 
 const { jest } = import.meta;
 
-const tenantContext = new MockTenant(undefined, {
-  signInExperiences: {
-    updateDefaultSignInExperience: async (
-      data: Partial<CreateSignInExperience>
-    ): Promise<SignInExperience> => ({
-      ...mockSignInExperience,
-      ...data,
-    }),
-    findDefaultSignInExperience: jest.fn().mockResolvedValue(mockSignInExperience),
+const tenantContext = new MockTenant(
+  undefined,
+  {
+    signInExperiences: {
+      updateDefaultSignInExperience: async (
+        data: Partial<CreateSignInExperience>
+      ): Promise<SignInExperience> => ({
+        ...mockSignInExperience,
+        ...data,
+      }),
+      findDefaultSignInExperience: jest.fn().mockResolvedValue(mockSignInExperience),
+    },
   },
-});
+  {
+    getLogtoConnectors: jest.fn().mockResolvedValue([]),
+  }
+);
 const signInExperiencesRoutes = await pickDefault(import('./index.js'));
 const signInExperienceRequester = createRequester({
   authedRoutes: signInExperiencesRoutes,

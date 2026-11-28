@@ -21,7 +21,9 @@ const tenantContext = new MockTenant(
       findDefaultSignInExperience: jest.fn().mockResolvedValue(mockSignInExperience),
     },
   },
-  undefined,
+  {
+    getLogtoConnectors: jest.fn().mockResolvedValue([]),
+  },
   {
     signInExperiences: {
       validateLanguageInfo,

@@ -92,7 +92,8 @@ const getUserInfo =
     }
 
     const { code } = authResponseResult.data;
-    const { redirectUri } = await getSession();
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- guard against callers returning undefined when no connector session exists
+    const { redirectUri } = (await getSession()) ?? {};
 
     if (!redirectUri) {
       throw new ConnectorError(ConnectorErrorCodes.General, {
