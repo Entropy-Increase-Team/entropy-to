@@ -1,4 +1,4 @@
-import { type ConsentInfoResponse } from '@logto/schemas';
+import { resolveSignInExperienceAppearance, Theme, type ConsentInfoResponse } from '@logto/schemas';
 import classNames from 'classnames';
 import type { TFuncKey } from 'i18next';
 import type { ReactNode } from 'react';
@@ -32,7 +32,20 @@ const LandingPageLayout = ({ children, title, titleInterpolation, thirdPartyBran
   const {
     color: { isDarkModeEnabled },
     branding,
+    appearance,
+    hideLogtoBranding,
   } = experienceSettings;
+
+  const resolvedAppearance = resolveSignInExperienceAppearance(
+    appearance,
+    branding,
+    hideLogtoBranding
+  );
+  const isAdaptiveLogo =
+    Boolean(branding.adaptiveLogo) &&
+    theme === Theme.Dark &&
+    Boolean(branding.logoUrl) &&
+    !branding.darkLogoUrl;
 
   return (
     <FirstScreenLayout pageMeta={{ titleKey: title, titleKeyInterpolation: titleInterpolation }}>
@@ -40,6 +53,10 @@ const LandingPageLayout = ({ children, title, titleInterpolation, thirdPartyBran
         className={classNames(styles.header, layoutClassNames.brandingHeader)}
         headline={title}
         headlineInterpolation={titleInterpolation}
+        brandName={branding.brandName}
+        tagline={branding.tagline}
+        isAdaptiveLogo={isAdaptiveLogo}
+        alignment={resolvedAppearance.headerAlignment}
         logo={getBrandingLogoUrl({ theme, branding, isDarkModeEnabled })}
         thirdPartyLogo={
           thirdPartyBranding &&

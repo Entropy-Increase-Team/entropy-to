@@ -1,14 +1,24 @@
 @use '@/shared/scss/underscore' as _;
 
+.wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: _.unit(1.5);
+  max-width: 100%;
+}
+
 .signature {
   @include _.flex-row;
-  font: var(--font-label-2);
+  font: var(--font-label-3);
   font-weight: normal;
-  color: var(--color-neutral-variant-60);
+  color: var(--color-type-secondary);
   padding: _.unit(1) _.unit(2);
   text-decoration: none;
-  opacity: 75%;
+  opacity: 78%;
   direction: ltr;
+  transition: opacity 150ms ease;
 
   .staticIcon {
     display: block;
@@ -19,7 +29,8 @@
   }
 
   &:hover,
-  &:active {
+  &:active,
+  &:focus-visible {
     opacity: 100%;
 
     .staticIcon {
@@ -36,9 +47,58 @@
   }
 }
 
+.customLink,
+.customStatic {
+  display: inline-flex;
+  align-items: center;
+  gap: _.unit(1.5);
+  font: var(--font-body-3);
+  color: var(--color-type-secondary);
+  text-decoration: none;
+  transition: color 150ms ease;
+}
+
+.customLink:hover,
+.customLink:focus-visible {
+  color: var(--color-type-primary);
+}
+
+.customLogo {
+  height: 16px;
+  width: auto;
+  max-width: 96px;
+  object-fit: contain;
+  display: block;
+}
+
+.customText {
+  line-height: 1.4;
+}
+
+.separator {
+  color: var(--color-type-secondary);
+  opacity: 55%;
+  font: var(--font-body-3);
+}
+
+.icpLink,
+.icpText {
+  font: var(--font-body-3);
+  color: var(--color-type-secondary);
+  opacity: 82%;
+  text-decoration: none;
+  transition: opacity 150ms ease, color 150ms ease;
+}
+
+.icpLink:hover,
+.icpLink:focus-visible {
+  opacity: 100%;
+  color: var(--color-type-primary);
+  text-decoration: underline;
+}
+
 :global(body.mobile) {
   .signature {
-    color: var(--color-neutral-variant-80);
     font: var(--font-label-3);
   }
 }

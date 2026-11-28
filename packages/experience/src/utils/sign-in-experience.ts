@@ -73,13 +73,6 @@ export const parseHtmlTitle = (path: string) => {
   if (path.startsWith('/forgot-password')) {
     return i18next.t('description.reset_password');
   }
-
-  // Return undefined for all continue flow pages to keep title remain the same as the previous page
-  if (path.startsWith('/continue')) {
-    return;
-  }
-
-  return 'Logto';
 };
 
 export const codeVerificationTypeMap = Object.freeze({

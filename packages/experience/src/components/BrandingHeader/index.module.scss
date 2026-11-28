@@ -8,6 +8,16 @@ $logo-max-width: 160px;
   @include _.flex-column;
 }
 
+.alignLeft {
+  align-items: flex-start;
+
+  .headline,
+  .tagline,
+  .brandWordmark {
+    text-align: start;
+  }
+}
+
 .logoWrapper {
   @include _.flex-row;
 }
@@ -33,18 +43,34 @@ $logo-max-width: 160px;
   color: var(--color-type-secondary);
 }
 
+.brandWordmark {
+  font: var(--font-label-3);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--color-type-secondary);
+  text-align: center;
+  margin-bottom: _.unit(1.5);
+}
+
 .headline {
   flex-shrink: 0;
   text-align: center;
   color: var(--color-type-primary);
+  letter-spacing: -0.025em;
+  @include _.multi-line-ellipsis(2);
+}
+
+.tagline {
+  margin-top: _.unit(1.5);
+  text-align: center;
+  font: var(--font-body-2);
+  color: var(--color-type-secondary);
   @include _.multi-line-ellipsis(2);
 }
 
 :global(body.mobile) {
   .container {
-    height: 15vh;
-    min-height: 92px;
-    max-height: 148px;
+    min-height: 76px;
   }
 
   .logoWrapper:not(:last-child) {
@@ -62,6 +88,6 @@ $logo-max-width: 160px;
   }
 
   .headline {
-    font: var(--font-title-2);
+    font: var(--font-headline-2);
   }
 }

@@ -1,89 +1,94 @@
 /* Color Theme */
-/* Foundation */
+/* Foundation — Neutral precision console palette aligned with Entropy design tokens */
 
 /* Static */
 @mixin static {
   --color-static-white: #fff;
-  --color-static-black: #000;
-  --color-static-dark-type-primary: #f7f8f8; // For loading icon use
-  --color-shadow-1: 0 4px 8px rgba(0, 0, 0, 8%);
-  --color-shadow-2: 0 4px 8px rgba(0, 0, 0, 2%);
-  --color-shadow-2-reversed: 0 -4px 8px rgba(0, 0, 0, 2%);
+  --color-static-black: #0f1114;
+  --color-static-dark-type-primary: #f3f5f8; // For loading icon use
+  --color-shadow-1: 0 4px 12px rgba(0, 0, 0, 8%);
+  --color-shadow-2: 0 1px 2px rgba(0, 0, 0, 5%), 0 3px 6px rgba(0, 0, 0, 4%);
+  --color-shadow-2-reversed: 0 -4px 8px rgba(0, 0, 0, 4%);
+  --color-shadow-card: 0 1px 2px rgba(0, 0, 0, 5%), 0 3px 6px rgba(0, 0, 0, 4%);
 }
 
 @mixin light {
-  /* Color Platte */
+  /* Color Palette */
   --color-neutral-0: #0000;
-  --color-neutral-10: #191c1d;
-  --color-neutral-20: #2d3132;
-  --color-neutral-50: #747778;
-  --color-neutral-80: #c4c7c7;
-  --color-neutral-90: #e0e3e3;
-  --color-neutral-95: #eff1f1;
-  --color-neutral-99: #f7f8f8;
+  --color-neutral-10: #111318;
+  --color-neutral-20: #272b34;
+  --color-neutral-50: #6b7280;
+  --color-neutral-80: #d4d7de;
+  --color-neutral-90: #e5e7ec;
+  --color-neutral-95: #f1f2f5;
+  --color-neutral-99: #f8f8fa;
   --color-neutral-100: #fff;
 
-  --color-neutral-variant-60: #928f9a;
-  --color-neutral-variant-70: #adaab4;
-  --color-neutral-variant-80: #c9c5d0;
-  --color-neutral-variant-90: #e5e1ec;
+  --color-neutral-variant-60: #767d8a;
+  --color-neutral-variant-70: #9aa0ac;
+  --color-neutral-variant-80: #c7ccd6;
+  --color-neutral-variant-90: #f4f4f6;
 
-  --color-danger-30: #930006;
-  --color-danger-40: #ba1b1b;
-  --color-danger-50: #dd3730;
+  --color-danger-30: #991b1b;
+  --color-danger-40: #dc2626;
+  --color-danger-50: #ef4444;
 
-  --color-success-60: #4ea254;
-  --color-success-70: #68be6c;
-  --color-success-80: #83da85;
-  --color-success-90: #9fe79f;
+  --color-success-60: #0f8a57;
+  --color-success-70: #14a66a;
+  --color-success-80: #34c388;
+  --color-success-90: #86e5bc;
 
-  --color-brand-30: #4300da;
-  --color-brand-40: #5d34f2;
-  --color-brand-50: #7958ff;
-  --color-brand-60: #9b80f9;
-  --color-brand-70: #af9eff;
+  --color-brand-30: #0b0d10;
+  --color-brand-40: #14171c;
+  --color-brand-50: #262b34;
+  --color-brand-60: #353b47;
+  --color-brand-70: #4c5464;
 
-  --color-alert-60: #ca8000;
-  --color-alert-70: #eb9918;
-  --color-alert-90: #ffddb5;
-  --color-alert-99: #fff5eb;
+  --color-alert-60: #b45309;
+  --color-alert-70: #d97706;
+  --color-alert-90: #fde68a;
+  --color-alert-99: #fffbeb;
 
   /* Text & Icon */
   --color-type-primary: var(--color-neutral-10);
   --color-type-secondary: var(--color-neutral-50);
-  --color-type-disable: rgba(25, 28, 29, 35%); // 35% --color-neutral-10
-  --color-type-link: var(--color-brand-default);
+  --color-type-disable: rgba(17, 19, 24, 35%);
+  --color-type-link: #0d74ce;
+  --color-ring: #0d74ce;
 
   /* Line */
-  --color-line-divider: rgba(25, 28, 29, 12%); // 12% --color-neutral-10
-  --color-line-border: var(--color-neutral-80);
-  --color-line-border-transparent: rgba(25, 28, 29, 25%); // 25% --color-neutral-10
+  --color-line-divider: rgba(0, 0, 0, 8%);
+  --color-line-border: rgba(0, 0, 0, 12%);
+  --color-line-border-strong: rgba(0, 0, 0, 15%);
+  --color-line-border-transparent: rgba(0, 0, 0, 15%);
+  --color-line-input: rgba(0, 0, 0, 14%);
 
   /* Container */
   --color-container-on-alert: var(--color-alert-70);
   --color-container-alert: var(--color-alert-99);
 
   /* Background */
-  --color-bg-body-base: var(--color-neutral-95);
+  --color-bg-body-base: #f4f4f6;
   --color-bg-body: var(--color-neutral-100);
   --color-bg-layer-1: var(--color-static-white);
   --color-bg-layer-2: var(--color-neutral-95);
   --color-bg-body-overlay: var(--color-neutral-100);
-  --color-bg-float-base: var(--color-neutral-variant-90);
+  --color-bg-float-base: #f4f4f6;
   --color-bg-float: var(--color-neutral-100);
   --color-bg-float-overlay: var(--color-neutral-100);
-  --color-bg-mask: rgba(0, 0, 0, 40%); // 4% --color-neutral-0
+  --color-bg-popover: var(--color-neutral-100);
+  --color-bg-mask: rgba(15, 17, 20, 44%);
   --color-bg-toast: var(--color-neutral-20);
   --color-bg-state-unselected: var(--color-neutral-90);
-  --color-bg-state-disabled: rgba(25, 28, 29, 8%); // 8% --color-neutral-10
+  --color-bg-state-disabled: rgba(17, 19, 24, 7%);
   --color-bg-light: var(--color-neutral-95);
 
-  /* Brand */
-  // Note: System brand color. May be overwritten dynamically by js
+  /* Brand (overwritten dynamically by appearance-dom / SSR stylesheet) */
   --color-brand-default: var(--color-brand-40);
   --color-brand-hover: var(--color-brand-50);
   --color-brand-pressed: var(--color-brand-30);
   --color-brand-loading: var(--color-brand-60);
+  --color-brand-foreground: #fff;
 
   /* Danger */
   --color-danger-default: var(--color-danger-40);
@@ -97,121 +102,116 @@
   --color-success-disable: var(--color-success-90);
 
   /* Overlay */
-  --color-overlay-neutral-hover: rgba(25, 28, 29, 8%); // 8% --color-neutral-10
-  --color-overlay-neutral-pressed: rgba(25, 28, 29, 12%); // 12% --color-neutral-10
-  --color-overlay-neutral-focused: rgba(25, 28, 29, 16%); // 16% --color-neutral-10
-  --color-overlay-danger-hover: rgba(186, 27, 27, 8%); // 8% --color-danger-40
-  --color-overlay-danger-pressed: rgba(186, 27, 27, 12%); // 12% --color-danger-40
-  --color-overlay-danger-focused: rgba(186, 27, 27, 16%); // 16% --color-danger-40
-  // Note: System brand color. May be overwritten dynamically by js
-  --color-overlay-brand-hover: rgba(93, 52, 242, 8%); // 8% --color-brand-default
-  --color-overlay-brand-pressed: rgba(93, 52, 242, 12%); // 12% --color-brand-default
-  --color-overlay-brand-focused: rgba(93, 52, 242, 16%); // 16% --color-brand-default
+  --color-overlay-neutral-hover: rgba(17, 19, 24, 5%);
+  --color-overlay-neutral-pressed: rgba(17, 19, 24, 9%);
+  --color-overlay-neutral-focused: rgba(17, 19, 24, 14%);
+  --color-overlay-danger-hover: rgba(220, 38, 38, 8%);
+  --color-overlay-danger-pressed: rgba(220, 38, 38, 12%);
+  --color-overlay-danger-focused: rgba(220, 38, 38, 18%);
+  --color-overlay-brand-hover: rgba(13, 116, 206, 8%);
+  --color-overlay-brand-pressed: rgba(13, 116, 206, 12%);
+  --color-overlay-brand-focused: rgba(13, 116, 206, 20%);
 
-  --color-surface: var(--color-neutral-99);
+  --color-surface: #f8f8fa;
+  --color-surface-subtle: #f8f8fa;
+  --color-surface-muted: #eceef2;
   --color-surface-1: var(--color-bg-layer-2);
+  --color-shadow-card: 0 1px 2px rgba(0, 0, 0, 5%), 0 3px 6px rgba(0, 0, 0, 4%);
 }
 
 @mixin dark {
-  /* Color Platte */
+  /* Color Palette — Layered charcoal, no pure #000, no purple tint */
   --color-neutral-0: #fff;
-  --color-neutral-10: #f7f8f8;
-  --color-neutral-20: #eff1f1;
-  --color-neutral-50: #a9acac;
-  --color-neutral-80: #5c5f60;
-  --color-neutral-90: #444748;
-  --color-neutral-95: #2d3132;
-  --color-neutral-99: #191c1d;
-  --color-neutral-100: #000;
+  --color-neutral-10: #f3f5f8;
+  --color-neutral-20: #d9dde4;
+  --color-neutral-50: #9ba1ad;
+  --color-neutral-80: #3a404c;
+  --color-neutral-90: #282d36;
+  --color-neutral-95: #1c2028;
+  --color-neutral-99: #14171c;
+  --color-neutral-100: #0f1114;
 
-  --color-neutral-variant-60: #928f9a;
-  --color-neutral-variant-70: #78767f;
-  --color-neutral-variant-80: #5f5d67;
-  --color-neutral-variant-90: #47464e;
+  --color-neutral-variant-60: #8e96a4;
+  --color-neutral-variant-70: #6c7482;
+  --color-neutral-variant-80: #4c5360;
+  --color-neutral-variant-90: #232831;
 
-  --color-danger-30: #ffdad4;
-  --color-danger-40: #ffb4a9;
-  --color-danger-50: #ff897a;
-  --color-danger-60: #ff5449;
-  --color-danger-70: #dd3730;
-  --color-danger-80: #ba1b1b;
+  --color-danger-30: #fecaca;
+  --color-danger-40: #fca5a5;
+  --color-danger-50: #f87171;
+  --color-danger-60: #ef4444;
+  --color-danger-70: #dc2626;
+  --color-danger-80: #b91c1c;
 
-  --color-success-60: #4ea254;
-  --color-success-70: #32873d;
-  --color-success-80: #116d26;
-  --color-success-90: #005314;
+  --color-success-60: #22c55e;
+  --color-success-70: #16a34a;
+  --color-success-80: #15803d;
+  --color-success-90: #166534;
 
-  --color-brand-30: #e6deff;
-  --color-brand-40: #cabeff;
-  --color-brand-50: #af9eff;
-  --color-brand-60: #6137f6;
-  --color-brand-70: #7958ff;
+  --color-brand-30: #ced5e0;
+  --color-brand-40: #dfe4ec;
+  --color-brand-50: #e8ecf2;
+  --color-brand-60: #d4dbe5;
+  --color-brand-70: #f5f7fa;
 
-  --color-surface: var(--color-neutral-99);
-  --color-surface-1: var(--color-bg-layer-2);
-  --color-surface-2:
-    linear-gradient(0deg, rgba(202, 190, 255, 8%), rgba(202, 190, 255, 8%)),
-    linear-gradient(0deg, rgba(196, 199, 199, 2%), rgba(196, 199, 199, 2%)),
-    #191c1d;
-  --color-surface-3:
-    linear-gradient(0deg, rgba(202, 190, 255, 11%), rgba(202, 190, 255, 11%)),
-    linear-gradient(0deg, rgba(196, 199, 199, 2%), rgba(196, 199, 199, 2%)),
-    #191c1d;
-  --color-surface-4:
-    linear-gradient(0deg, rgba(202, 190, 255, 14%), rgba(202, 190, 255, 14%)),
-    linear-gradient(0deg, rgba(196, 199, 199, 2%), rgba(196, 199, 199, 2%)),
-    #191c1d;
+  --color-surface: #14171c;
+  --color-surface-subtle: #14171c;
+  --color-surface-muted: #1c2028;
+  --color-surface-1: #161920;
+  --color-surface-2: #161920;
+  --color-surface-3: #161920;
+  --color-surface-4: #1c2028;
 
-  --color-alert-60: #ca8000;
-  --color-alert-70: #a76900;
-  --color-alert-90: #663e00;
-  --color-alert-99: #2b1700;
+  --color-alert-60: #d97706;
+  --color-alert-70: #b45309;
+  --color-alert-90: #78350f;
+  --color-alert-99: #3b1c06;
 
   /* Text & Icon */
   --color-type-primary: var(--color-neutral-10);
   --color-type-secondary: var(--color-neutral-50);
-  --color-type-disable: rgba(247, 248, 248, 35%); // 35% --color-neutral-10;
-  --color-type-link: var(--color-brand-default);
+  --color-type-disable: rgba(243, 245, 248, 35%);
+  --color-type-link: #6ea8ff;
+  --color-ring: #6ea8ff;
 
   /* Line */
-  --color-line-divider: rgba(247, 248, 248, 14%); // 14% --color-neutral-10
-  --color-line-border: var(--color-neutral-80);
-  --color-line-border-transparent: rgba(247, 248, 248, 20%); // 20% --color-neutral-10
+  --color-line-divider: rgba(255, 255, 255, 8%);
+  --color-line-border: rgba(255, 255, 255, 11%);
+  --color-line-border-strong: rgba(255, 255, 255, 15%);
+  --color-line-border-transparent: rgba(255, 255, 255, 15%);
+  --color-line-input: rgba(255, 255, 255, 12%);
 
   /* Container */
   --color-container-on-alert: var(--color-alert-60);
   --color-container-alert: var(--color-alert-90);
 
   /* Background */
-  --color-bg-body-base: var(--color-neutral-100);
-  --color-bg-body: var(--color-surface);
-  --color-bg-body-overlay: var(--color-surface-2);
-  --color-bg-layer-1:
-    linear-gradient(0deg, rgba(202, 190, 255, 8%), rgba(202, 190, 255, 8%)),
-    linear-gradient(0deg, rgba(196, 199, 199, 2%), rgba(196, 199, 199, 2%)),
-    #191c1d;
-  --color-bg-layer-2: var(--color-surface-4);
-  --color-bg-float-base: var(--color-neutral-100);
-  --color-bg-float: var(--color-surface-3);
-  --color-bg-float-overlay: var(--color-surface-4);
-  --color-bg-mask: rgba(0, 0, 0, 60%); // 60% --color-neutral-100;
-  --color-bg-toast: var(--color-neutral-80);
-  --color-bg-state-unselected: var(--color-neutral-90);
-  --color-bg-state-disabled: rgba(247, 248, 248, 8%); // 8% --color-neutral-10
-  --color-bg-light: #f7f8f829;
+  --color-bg-body-base: #0f1114;
+  --color-bg-body: #0f1114;
+  --color-bg-body-overlay: #161920;
+  --color-bg-layer-1: #161920;
+  --color-bg-layer-2: #1c2028;
+  --color-bg-float-base: #0f1114;
+  --color-bg-float: #161920;
+  --color-bg-float-overlay: #1c2028;
+  --color-bg-popover: #1c2028;
+  --color-bg-mask: rgba(0, 0, 0, 62%);
+  --color-bg-toast: #282d36;
+  --color-bg-state-unselected: #282d36;
+  --color-bg-state-disabled: rgba(255, 255, 255, 8%);
+  --color-bg-light: rgba(255, 255, 255, 10%);
 
-
-  /* Brand */
-  // Note: System brand color. May be overwritten dynamically by js
+  /* Brand (overwritten dynamically by appearance-dom / SSR stylesheet) */
   --color-brand-default: var(--color-brand-70);
-  --color-brand-hover: var(--color-brand-50);
+  --color-brand-hover: var(--color-brand-40);
   --color-brand-pressed: var(--color-brand-30);
   --color-brand-loading: var(--color-brand-60);
+  --color-brand-foreground: #0f1114;
 
   /* Danger */
-  --color-danger-default: var(--color-danger-70);
-  --color-danger-hover: var(--color-danger-60);
-  --color-danger-pressed: var(--color-danger-80);
+  --color-danger-default: var(--color-danger-60);
+  --color-danger-hover: var(--color-danger-50);
+  --color-danger-pressed: var(--color-danger-70);
 
   /* Success */
   --color-success-default: var(--color-success-70);
@@ -220,14 +220,17 @@
   --color-success-disable: var(--color-success-90);
 
   /* Overlay */
-  --color-overlay-neutral-hover: rgba(247, 248, 248, 8%); // 8% --color-neutral-10
-  --color-overlay-neutral-pressed: rgba(247, 248, 248, 12%); // 12% --color-neutral-10
-  --color-overlay-neutral-focused: rgba(247, 248, 248, 16%); // 16% --color-neutral-10
-  --color-overlay-danger-hover: rgba(221, 55, 48, 8%); // 8% --color-danger-40
-  --color-overlay-danger-pressed: rgba(221, 55, 48, 12%); // 12% --color-danger-40
-  --color-overlay-danger-focused: rgba(221, 55, 48, 16%); // 16% --color-danger-40
-  // Note: System brand color. May be overwritten dynamically by js
-  --color-overlay-brand-hover: rgba(202, 190, 255, 8%); // 8% --color-brand-40
-  --color-overlay-brand-pressed: rgba(202, 190, 255, 12%); // 12% --color-brand-40
-  --color-overlay-brand-focused: rgba(202, 190, 255, 16%); // 16% --color-brand-40
+  --color-overlay-neutral-hover: rgba(255, 255, 255, 7%);
+  --color-overlay-neutral-pressed: rgba(255, 255, 255, 11%);
+  --color-overlay-neutral-focused: rgba(255, 255, 255, 16%);
+  --color-overlay-danger-hover: rgba(239, 68, 68, 10%);
+  --color-overlay-danger-pressed: rgba(239, 68, 68, 16%);
+  --color-overlay-danger-focused: rgba(239, 68, 68, 22%);
+  --color-overlay-brand-hover: rgba(110, 168, 255, 10%);
+  --color-overlay-brand-pressed: rgba(110, 168, 255, 16%);
+  --color-overlay-brand-focused: rgba(110, 168, 255, 24%);
+  --color-shadow-card:
+    inset 0 1px rgba(255, 255, 255, 4%),
+    0 6px 16px rgba(0, 0, 0, 32%),
+    0 2px 5px rgba(0, 0, 0, 18%);
 }

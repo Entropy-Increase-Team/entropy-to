@@ -40,9 +40,9 @@ jest.mock('./apis/user', () => ({
   getUserInfo: async () => new Promise(jest.fn()),
 }));
 
-const querySignature = () => document.querySelector('[data-logto-signature="secured"]');
+const querySignature = () => document.querySelector('[data-brand-signature]');
 
-describe('Account Center Logto branding', () => {
+describe('Account Center footer branding', () => {
   it.each([true, false])(
     'is hidden while settings load and follows hideLogtoBranding=%s afterwards',
     async (hideLogtoBranding) => {
@@ -56,7 +56,34 @@ describe('Account Center Logto branding', () => {
         resolveSettings({ ...mockSignInExperienceSettings, hideLogtoBranding });
       });
       expect(Boolean(querySignature())).toBe(!hideLogtoBranding);
+      expect(document.head.querySelector('style[data-logto-signature-guard]')).toBeNull();
     },
     15_000
   );
+
+  it('renders custom footer branding when configured', async () => {
+    window.history.pushState({}, '', '/account/email');
+    const { default: App } = await import('./App');
+
+    const { getByText } = render(<App />);
+
+    await act(async () => {
+      resolveSettings({
+        ...mockSignInExperienceSettings,
+        hideLogtoBranding: true,
+        branding: {
+          ...mockSignInExperienceSettings.branding,
+          footerBranding: {
+            mode: 'custom',
+            text: 'Powered by 熵增账号中心',
+            icpRecord: '京ICP备00000000号',
+          },
+        },
+      });
+    });
+
+    expect(querySignature()?.getAttribute('data-brand-signature')).toBe('custom');
+    expect(getByText('Powered by 熵增账号中心')).toBeTruthy();
+    expect(getByText('京ICP备00000000号')).toBeTruthy();
+  });
 });

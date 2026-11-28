@@ -1,6 +1,5 @@
-import defaultAppleTouchLogo from '@experience/shared/assets/apple-touch-icon.png';
-import defaultFavicon from '@experience/shared/assets/favicon.png';
 import { type SignInExperienceResponse } from '@experience/shared/types';
+import { defaultNeutralFavicon } from '@experience/shared/utils/favicon';
 import { Theme } from '@logto/schemas';
 import { conditionalString } from '@silverhand/essentials';
 import classNames from 'classnames';
@@ -17,30 +16,18 @@ const themeToFavicon = Object.freeze({
   [Theme.Dark]: 'darkFavicon',
 } as const satisfies Record<Theme, keyof SignInExperienceResponse['branding']>);
 
-/**
- * User React Helmet to manage html and body attributes
- * @see https://github.com/nfl/react-helmet
- *
- * - lang: set html lang attribute
- * - data-theme: set html data-theme attribute
- * - favicon: set favicon
- * - apple-touch-icon: set apple touch icon
- * - body class: set preview body class
- * - body class: set platform body class
- * - body class: set theme body class
- * - custom css: set custom css style tag
- */
-
 const AppMeta = () => {
   const { experienceSettings, accountCenterSettings, theme, platform } = useContext(PageContext);
   const favicon =
     experienceSettings?.branding[themeToFavicon[theme]] ?? experienceSettings?.branding.favicon;
+  const brandName = experienceSettings?.branding.brandName?.trim();
 
   return (
     <Helmet>
       <html lang={i18next.language} dir={i18next.dir()} data-theme={theme} />
-      <link rel="shortcut icon" href={favicon ?? defaultFavicon} />
-      <link rel="apple-touch-icon" href={favicon ?? defaultAppleTouchLogo} sizes="180x180" />
+      {brandName && <title>{brandName}</title>}
+      <link rel="shortcut icon" href={favicon ?? defaultNeutralFavicon} />
+      <link rel="apple-touch-icon" href={favicon ?? defaultNeutralFavicon} sizes="180x180" />
       {accountCenterSettings?.customCss && <style>{accountCenterSettings.customCss}</style>}
       <body
         className={classNames(
