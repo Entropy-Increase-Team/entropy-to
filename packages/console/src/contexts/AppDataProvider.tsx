@@ -1,26 +1,18 @@
 import ky from 'ky';
 import type { ReactNode } from 'react';
-import { useContext, useMemo, createContext } from 'react';
+import { useContext, useMemo } from 'react';
 import useSWRImmutable from 'swr/immutable';
 
 import { adminTenantEndpoint } from '@/consts';
 
+import { type AppData, AppDataContext } from './AppDataContext';
 import { TenantsContext } from './TenantsProvider';
+
+export { AppDataContext } from './AppDataContext';
 
 type Props = {
   readonly children: ReactNode;
 };
-
-type AppData = {
-  /**
-   * The Logto endpoint for the current tenant.
-   *
-   * Always use this value as the base URL when referring to the Logto URL of the current user's tenant.
-   */
-  tenantEndpoint?: URL;
-};
-
-export const AppDataContext = createContext<AppData>({});
 
 const useTenantEndpoint = (tenantId: string) => {
   return useSWRImmutable(

@@ -88,6 +88,17 @@
         }
       }
     },
+    "/api/.well-known/console-branding": {
+      "get": {
+        "summary": "Get console branding",
+        "description": "Get the resolved white-label branding metadata for the Admin Console, preferring database sign-in experience branding over instance environment fallbacks.",
+        "responses": {
+          "200": {
+            "description": "The resolved console branding metadata."
+          }
+        }
+      }
+    },
     "/api/.well-known/management.openapi.json": {
       "get": {
         "summary": "Get Management API swagger JSON",

@@ -46,8 +46,8 @@ describe('admin console sign-in experience', () => {
         logoUrl: 'mock://fake-url/logo.png',
         darkLogoUrl: 'mock://fake-url/dark-logo.png',
       },
-      termsOfUseUrl: 'mock://fake-url/terms',
-      privacyPolicyUrl: 'mock://fake-url/privacy',
+      termsOfUseUrl: 'https://fake-url.example/terms',
+      privacyPolicyUrl: 'https://fake-url.example/privacy',
       mfa: {
         policy: MfaPolicy.PromptAtSignInAndSignUp,
         factors: [],

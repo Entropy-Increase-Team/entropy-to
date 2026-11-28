@@ -4,8 +4,23 @@ import { expectNavigation, appendPathname, waitFor } from '#src/utils.js';
 
 import { waitForFormCard, expectToSelectColor, expectToSaveSignInExperience } from './helpers.js';
 
-const defaultPrimaryColor = '#6139F6';
+const defaultPrimaryColor = '#14171C';
 const testPrimaryColor = '#5B4D8E';
+
+const ensureDarkModeEnabled = async (enabled: boolean) => {
+  const isChecked = await page.evaluate(
+    () =>
+      document.querySelector<HTMLInputElement>(
+        'form div[class$=field] input[name="color.isDarkModeEnabled"]'
+      )?.checked ?? false
+  );
+
+  if (isChecked !== enabled) {
+    await expect(page).toClick(
+      'form div[class$=field] label[class$=switch]:has(input[name="color.isDarkModeEnabled"])'
+    );
+  }
+};
 
 await page.setViewport({ width: 1920, height: 1080 });
 
@@ -49,10 +64,8 @@ describe('sign-in experience: branding', () => {
   });
 
   it('update branding config', async () => {
-    // Enabled dark mode
-    await expect(page).toClick(
-      'form div[class$=field] label[class$=switch]:has(input[name="color.isDarkModeEnabled"])'
-    );
+    // Ensure dark mode is enabled
+    await ensureDarkModeEnabled(true);
 
     // Update brand color
     await expectToSelectColor(page, {
@@ -91,9 +104,7 @@ describe('sign-in experience: branding', () => {
     await expectToSaveSignInExperience(page);
 
     // Disable dark mode
-    await expect(page).toClick(
-      'form div[class$=field] label[class$=switch]:has(input[name="color.isDarkModeEnabled"])'
-    );
+    await ensureDarkModeEnabled(false);
 
     await expectToSaveSignInExperience(page);
   });

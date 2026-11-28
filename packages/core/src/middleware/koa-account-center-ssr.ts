@@ -7,7 +7,6 @@ import {
 import { conditionalArray, trySafe } from '@silverhand/essentials';
 import type { MiddlewareType } from 'koa';
 
-import { EnvSet } from '#src/env-set/index.js';
 import { escapeHtmlAttributeValue } from '#src/saml-application/SamlApplication/utils.js';
 import type Libraries from '#src/tenants/Libraries.js';
 
@@ -55,15 +54,11 @@ export default function koaAccountCenterSsr<StateT, ContextT extends WithI18nCon
         signInExperience.branding,
         signInExperience.hideLogtoBranding
       );
-      const faviconUrl =
-        signInExperience.branding.favicon ?? (EnvSet.values.brandFaviconUrl || undefined);
       const fontStylesheetUrl = getAppearanceFontStylesheetUrl(resolvedAppearance.typography);
       const appearanceCss = buildAppearanceStyleSheet(resolvedAppearance, signInExperience.color);
       const headInjections = conditionalArray<string>(
-        faviconUrl &&
-          `<link rel="shortcut icon" href="${escapeHtmlAttributeValue(faviconUrl)}" data-ssr-favicon>`,
         fontStylesheetUrl &&
-          `<link rel="stylesheet" href="${escapeHtmlAttributeValue(fontStylesheetUrl)}" data-appearance-font>`,
+          `<link rel="stylesheet" href="${escapeHtmlAttributeValue(fontStylesheetUrl)}" data-appearance-font="true">`,
         `<style data-appearance-tokens>${appearanceCss.replaceAll(/<\/(style)/gi, '<\\/$1')}</style>`
       );
 
